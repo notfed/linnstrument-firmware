@@ -1158,13 +1158,13 @@ void setSplitMpeMode(byte split, boolean enabled) {
   }
 }
 
-// Return the next color in the color cycle (1 through 6)
+// Return the next color in the color cycle (1 through COLOR_LAST)
 byte colorCycle(byte color, boolean includeOff) {
   color += 1;
   if (color == COLOR_BLACK) {
     color += 1;
   }
-  if (color > 11) {
+  if (color > COLOR_LAST) {
     if (includeOff) {
       color = 0;
     }

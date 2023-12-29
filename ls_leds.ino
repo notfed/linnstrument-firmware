@@ -338,67 +338,69 @@ void refreshLedColumn(unsigned long now) {
     // if this LED is not off, process it
     // set the color bytes to the correct color
     if (cellDisplay) {
-      // construct composite colors
-      if ((!Device.operatingLowPower && displayInterval[actualCol][rowCount] % 2 != 0) ||
-          (Device.operatingLowPower && displayInterval[actualCol][rowCount] % 4 != 0)) {
-        switch (color)
-        {
-          case COLOR_WHITE:
-            color = COLOR_CYAN;
-            break;
-          case COLOR_ORANGE:
-            color = COLOR_YELLOW;
-            break;
-          case COLOR_LIME:
-            color = COLOR_GREEN;
-            break;
-          case COLOR_PINK:
-            color = COLOR_YELLOW;
-            break;
-        }
+
+      // Composite colors
+      byte tickTock =
+          (!Device.operatingLowPower && displayInterval[actualCol][rowCount] % 2 != 0) ||
+          (Device.operatingLowPower && displayInterval[actualCol][rowCount] % 4 != 0);
+      switch (color) {
+        case COLOR_WHITE:
+          color = tickTock ? COLOR_CYAN : COLOR_WHITE;
+          break;
+        case COLOR_PINK:
+          color = tickTock ? COLOR_YELLOW : COLOR_MAGENTA;
+          break;
+        case COLOR_ORANGE:
+          color = tickTock ? COLOR_YELLOW : COLOR_RED;
+          break;
+        case COLOR_LIME:
+          color = tickTock ? COLOR_GREEN : COLOR_YELLOW;
+          break;
+        case COLOR_SPRING_GREEN:
+          color = tickTock ? COLOR_GREEN : COLOR_CYAN;
+          break;
+        case COLOR_AZURE:
+          color = tickTock ? COLOR_CYAN : COLOR_BLUE;
+          break;
+        case COLOR_VIOLET:
+          color = tickTock ? COLOR_MAGENTA : COLOR_BLUE;
+          break;
+        case COLOR_ROSE:
+          color = tickTock ? COLOR_MAGENTA : COLOR_RED;
+          break;
       }
 
-      switch (color)
-      {
+      // First-order colors
+      byte rowBit = (B00000001 << rowCount);
+      switch (color) {
         case COLOR_OFF:
         case COLOR_BLACK:
           break;
+        case COLOR_WHITE:
+          blue |= rowBit;
+          red |= rowBit;
+          green |= rowBit;
+          break;
         case COLOR_RED:
-          red = red | (B00000001 << rowCount);
+          red |= rowBit;
           break;
         case COLOR_YELLOW:
-          red = red | (B00000001 << rowCount);
-          green = green | (B00000001 << rowCount);
+          red |= rowBit;
+          green |= rowBit;
           break;
         case COLOR_GREEN:
-          green = green | (B00000001 << rowCount);
+          green |= rowBit;
           break;
         case COLOR_CYAN:
-          green = green | (B00000001 << rowCount);
-          blue = blue | (B00000001 << rowCount);
+          green |= rowBit;
+          blue |= rowBit;
           break;
         case COLOR_BLUE:
-          blue = blue | (B00000001 << rowCount);
+          blue |= rowBit;
           break;
         case COLOR_MAGENTA:
-          blue = blue | (B00000001 << rowCount);
-          red = red | (B00000001 << rowCount);
-          break;
-        case COLOR_WHITE:
-          blue = blue | (B00000001 << rowCount);
-          red = red | (B00000001 << rowCount);
-          green = green | (B00000001 << rowCount);
-          break;
-        case COLOR_ORANGE:
-          red = red | (B00000001 << rowCount);
-          break;
-        case COLOR_LIME:
-          red = red | (B00000001 << rowCount);
-          green = green | (B00000001 << rowCount);
-          break;
-        case COLOR_PINK:
-          blue = blue | (B00000001 << rowCount);
-          red = red | (B00000001 << rowCount);
+          blue |= rowBit;
+          red |= rowBit;
           break;
       }
     }
