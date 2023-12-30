@@ -1365,10 +1365,10 @@ void handlePerSplitSettingNewTouch() {
     case 11:
       switch (sensorRow) {
         case 7:
-          Split[Global.currentPerSplit].colorMain = colorCycle(Split[Global.currentPerSplit].colorMain, false);
+          Split[Global.currentPerSplit].colorMain = colorCycle(Split[Global.currentPerSplit].colorMain, true);
           break;
         case 6:
-          Split[Global.currentPerSplit].colorAccent = colorCycle(Split[Global.currentPerSplit].colorAccent, false);
+          Split[Global.currentPerSplit].colorAccent = colorCycle(Split[Global.currentPerSplit].colorAccent, true);
           break;
         case 5:
           // handled in release

@@ -692,8 +692,8 @@ void paintPerSplitDisplay(byte side) {
   }
 
   // Set "Color" lights
-  setLed(11, 7, getPrimaryColor(side), cellOn);
-  setLed(11, 6, getSecondaryColor(side), cellOn);
+  setLed(11, 7, Split[side].colorMain, cellOn);
+  setLed(11, 6, Split[side].colorAccent, cellOn);
   setLed(11, 5, Split[side].colorPlayed, cellOn);
   setLed(11, 4, Split[side].colorLowRow, cellOn);
 
