@@ -2359,9 +2359,12 @@ void toggleNoteLights(int& notelights) {
   notelights ^= 1 << light;
 }
 
-
 void setNoteAssignedColor(byte note, byte color) {
   Global.noteAssignedColors[note] = color;
+}
+
+byte getNoteAssignedColor(byte note) {
+  return Global.noteAssignedColors[note];
 }
 
 boolean isArpeggiatorTempoTriplet() {
@@ -2598,8 +2601,13 @@ void handleGlobalSettingNewTouch() {
               break;
             case LIGHTS_ACCENT:
               if (!customLedPatternActive) {
+                // TODO: Do we ever need to fallback to this?
                 // toggleNoteLights(Global.accentNotes[Global.activeNotes]);
-                setNoteAssignedColor(currentNote, accentColor);
+                if (getNoteAssignedColor(currentNote) != accentColor) {
+                  setNoteAssignedColor(currentNote, accentColor);
+                } else {
+                  setNoteAssignedColor(currentNote, COLOR_BLACK);
+                }
               }
               break;
             case LIGHTS_ACTIVE:
