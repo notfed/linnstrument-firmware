@@ -2595,7 +2595,7 @@ void handleGlobalSettingNewTouch() {
               break;
             case LIGHTS_ACTIVE:
               Global.activeNotes = sensorCol-2 + (sensorRow*3);
-              loadCustomLedLayer(getActiveCustomLedPattern());
+              loadCustomLedLayer(-1);
               break;
           }
         }
