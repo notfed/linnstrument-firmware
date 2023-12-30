@@ -2359,6 +2359,11 @@ void toggleNoteLights(int& notelights) {
   notelights ^= 1 << light;
 }
 
+
+void setNoteAssignedColor(byte note, byte color) {
+  Global.noteAssignedColors[note] = color;
+}
+
 boolean isArpeggiatorTempoTriplet() {
   return Global.arpTempo == ArpEighthTriplet || Global.arpTempo == ArpSixteenthTriplet || Global.arpTempo == ArpThirtysecondTriplet;
 }
@@ -2583,6 +2588,7 @@ void handleGlobalSettingNewTouch() {
       case 3:
       case 4:
         if (sensorRow >= 0 && sensorRow <= 3) {
+          byte currentNote = sensorCol-2 + (sensorRow*3);
           // select individual scale notes or accent notes
           switch (lightSettings) {
             case LIGHTS_MAIN:
@@ -2592,11 +2598,12 @@ void handleGlobalSettingNewTouch() {
               break;
             case LIGHTS_ACCENT:
               if (!customLedPatternActive) {
-                toggleNoteLights(Global.accentNotes[Global.activeNotes]);
+                // toggleNoteLights(Global.accentNotes[Global.activeNotes]);
+                setNoteAssignedColor(currentNote, accentColor);
               }
               break;
             case LIGHTS_ACTIVE:
-              Global.activeNotes = sensorCol-2 + (sensorRow*3);
+              Global.activeNotes = currentNote;
               loadCustomLedLayer(-1);
               break;
           }

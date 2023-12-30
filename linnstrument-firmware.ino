@@ -755,6 +755,7 @@ struct GlobalSettings {
   byte activeNotes;                          // controls which collection of note lights presets is active
   int mainNotes[12];                         // bitmask array that determines which notes receive "main" lights
   int accentNotes[12];                       // bitmask array that determines which notes receive accent lights (octaves, white keys, black keys, etc.)
+  byte noteAssignedColors[12];               // Assign a color to each note
   byte rowOffset;                            // interval between rows. 0 = no overlap, 1-12 = interval, 13 = guitar
   signed char customRowOffset;               // the custom row offset that can be configured at the location of the octave setting
   byte guitarTuning[MAXROWS];                // the notes used for each row for the guitar tuning, 0-127
