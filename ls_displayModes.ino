@@ -522,15 +522,25 @@ void paintNormalDisplayCell(byte split, byte col, byte row) {
   else if (!customLedPatternActive) {
     byte octaveNote = abs(displayedNote % 12);
 
-    // first paint all cells in split to its background color
-    if (Global.mainNotes[Global.activeNotes] & (1 << octaveNote)) {
+    boolean isMainNote = Global.mainNotes[Global.activeNotes] & (1 << octaveNote);
+    boolean isAccentNote = Global.accentNotes[Global.activeNotes] & (1 << octaveNote);
+    boolean splitDefinesMainColor =
+        Split[split].colorMain != COLOR_OFF && Split[split].colorMain != COLOR_BLACK;
+    boolean splitDefinesAccentColor =
+        Split[split].colorAccent != COLOR_OFF && Split[split].colorAccent != COLOR_BLACK;
+
+    // paint all cells to assigned per-note colors, overriding with per-split colors if set
+    if (splitDefinesAccentColor && isAccentNote) {
+      // use per-split accent color
+      colour = Split[split].colorAccent;
+      cellDisplay = cellOn;
+    } else if (splitDefinesMainColor && isMainNote) {
+      // use per-split main color
       colour = Split[split].colorMain;
       cellDisplay = cellOn;
-    }
-
-    // then paint only notes marked as Accent notes with Accent color
-    if (Global.accentNotes[Global.activeNotes] & (1 << octaveNote)) {
-      colour = Split[split].colorAccent;
+    } else if (isMainNote) {
+      // use global per-note color
+      colour = Global.noteAssignedColors[octaveNote];
       cellDisplay = cellOn;
     }
   }
