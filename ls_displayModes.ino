@@ -1634,6 +1634,7 @@ void paintGlobalSettingsDisplay() {
 
     switch (lightSettings) {
       case LIGHTS_MAIN:
+        accentColor = COLOR_BLACK;
         if (!customLedPatternActive) {
           lightLed(1, 0);
           displayNoteLights(Global.mainNotes[Global.activeNotes]);
@@ -1641,11 +1642,12 @@ void paintGlobalSettingsDisplay() {
         break;
       case LIGHTS_ACCENT:
         if (!customLedPatternActive) {
-          lightLed(1, 1);
+          setLed(1, 1, accentColor, cellOn);
           displayNoteLights(Global.accentNotes[Global.activeNotes]);
         }
         break;
       case LIGHTS_ACTIVE:
+        accentColor = COLOR_BLACK;
         lightLed(1, 2);
         displayActiveNotes();
         break;

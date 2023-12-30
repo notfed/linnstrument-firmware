@@ -2564,8 +2564,10 @@ void handleGlobalSettingNewTouch() {
     switch (sensorCol) {
       case 1:
         switch (sensorRow) {
-          case LIGHTS_MAIN:
           case LIGHTS_ACCENT:
+            accentColor = colorCycle(accentColor, false);
+            setLed(1, 1, accentColor, cellOn);
+          case LIGHTS_MAIN:
           case LIGHTS_ACTIVE:
             if (!customLedPatternActive) {
               lightSettings = sensorRow;
