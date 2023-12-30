@@ -1459,7 +1459,7 @@ void handlePerSplitSettingNewTouch() {
     case 1:
       switch (sensorRow) {
         case 7:
-          setLed(sensorCol, sensorRow, Split[sensorSplit].colorMain, cellSlowPulse);
+          setLed(sensorCol, sensorRow, getPrimaryColor(sensorSplit), cellSlowPulse);
           break;
         case 6:
           setLed(sensorCol, sensorRow, getMpeColor(sensorSplit), cellSlowPulse);
@@ -3140,7 +3140,7 @@ void handleGlobalSettingRelease() {
     if (calcTimeDelta(micros(), tempoChangeTime) >= 1000000) {
       if (sensorCol <= 16 && ensureCellBeforeHoldWait(COLOR_BLACK, cellOff)) {
         clearDisplay();
-        big_scroll_text_flipped(Device.audienceMessages[sensorCol - 1], Split[LEFT].colorMain);        
+        big_scroll_text_flipped(Device.audienceMessages[sensorCol - 1], getPrimaryColor(LEFT));        
       }
       else if (sensorCol == 25) {
         Device.sleepActive = true;

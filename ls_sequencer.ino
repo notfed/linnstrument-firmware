@@ -752,7 +752,7 @@ void handleSequencerClearTouch() {
   if (cell(SEQ_COPY_COLUMN, SEQ_COPY_ROW).touched != untouchedCell) {
     cellTouched(SEQ_COPY_COLUMN, SEQ_COPY_ROW, ignoredCell);
   }
-  setLed(SEQ_CLEAR_COLUMN, SEQ_CLEAR_ROW, Split[sensorSplit].colorMain, cellSlowPulse);
+  setLed(SEQ_CLEAR_COLUMN, SEQ_CLEAR_ROW, getPrimaryColor(sensorSplit), cellSlowPulse);
 }
 
 void handleSequencerClearRelease() {
@@ -776,7 +776,7 @@ void handleSequencerCopyTouch() {
   if (cell(SEQ_CLEAR_COLUMN, SEQ_CLEAR_ROW).touched != untouchedCell) {
     cellTouched(SEQ_CLEAR_COLUMN, SEQ_CLEAR_ROW, ignoredCell);
   }
-  setLed(SEQ_COPY_COLUMN, SEQ_COPY_ROW, Split[sensorSplit].colorMain, cellSlowPulse);
+  setLed(SEQ_COPY_COLUMN, SEQ_COPY_ROW, getPrimaryColor(sensorSplit), cellSlowPulse);
 }
 
 void handleSequencerCopyRelease() {
@@ -1166,7 +1166,7 @@ void handleSequencerFaderTouch(boolean newVelocity) {
       switch (sensorRow) {
         case 3:
         {
-          paintNumericDataDisplay(Split[sensorSplit].colorMain, focus->getVelocity(), 0, false);
+          paintNumericDataDisplay(getPrimaryColor(sensorSplit), focus->getVelocity(), 0, false);
           if (LINNMODEL == 200) state.paintFocusFader(3, focus->getVelocity());
           break;
         }
@@ -1180,19 +1180,19 @@ void handleSequencerFaderTouch(boolean newVelocity) {
           if (durationLabel[0] == ' ') {
             offset += 2;
           }
-          smallfont_draw_string(offset, 0, (char*)durationLabel, Split[sensorSplit].colorMain, false);
+          smallfont_draw_string(offset, 0, (char*)durationLabel, getPrimaryColor(sensorSplit), false);
           if (LINNMODEL == 200) state.paintDurationFader(2, focus->getDuration());
           break;
         }
         case 1:
         {
-          paintNumericDataDisplay(Split[sensorSplit].colorMain, focus->getPitchOffset(), -4, false);
+          paintNumericDataDisplay(getPrimaryColor(sensorSplit), focus->getPitchOffset(), -4, false);
           if (LINNMODEL == 200) state.paintPitchOffsetFader(1, focus->getPitchOffset());
           break;
         }
         case 0:
         {
-          paintNumericDataDisplay(Split[sensorSplit].colorMain, focus->getTimbre(), 0, false);
+          paintNumericDataDisplay(getPrimaryColor(sensorSplit), focus->getTimbre(), 0, false);
           if (LINNMODEL == 200) state.paintFocusFader(0, focus->getTimbre());
           break;
         }
@@ -1326,7 +1326,7 @@ void displaySettingsLegend(const char* str) {
     performContinuousTasks();
   }
 
-  condfont_draw_string(0, 0, str, Split[Global.currentPerSplit].colorMain, false);
+  condfont_draw_string(0, 0, str, getPrimaryColor(Global.currentPerSplit), false);
   lastLegendDisplay = nowMillis;
   legendVisible = true;
 }
@@ -1494,7 +1494,7 @@ void paintSequencerDrum0107() {
   clearDisplay();
 
   for (byte r = 1; r < NUMROWS; ++r) {
-    setLed(1, r, sequencerDrum0107RowNum == r ? Split[Global.currentPerSplit].colorAccent : Split[Global.currentPerSplit].colorMain, cellOn);
+    setLed(1, r, sequencerDrum0107RowNum == r ? getSecondaryColor(Global.currentPerSplit) : getPrimaryColor(Global.currentPerSplit), cellOn);
   }
 
   paintSplitNumericDataDisplay(Global.currentPerSplit, Project.sequencer[Global.currentPerSplit].seqDrumNotes[sequencerDrum0107RowNum-1], 2, true);
@@ -1526,7 +1526,7 @@ void paintSequencerDrum0814() {
   clearDisplay();
 
   for (byte r = 1; r < NUMROWS; ++r) {
-    setLed(1, r, sequencerDrum0814RowNum == r ? Split[Global.currentPerSplit].colorAccent : Split[Global.currentPerSplit].colorMain, cellOn);
+    setLed(1, r, sequencerDrum0814RowNum == r ? getSecondaryColor(Global.currentPerSplit) : getPrimaryColor(Global.currentPerSplit), cellOn);
   }
 
   paintSplitNumericDataDisplay(Global.currentPerSplit, Project.sequencer[Global.currentPerSplit].seqDrumNotes[sequencerDrum0814RowNum - 1 + 7], 2, true);
@@ -1557,8 +1557,8 @@ void paintSequencerColors() {
 
   paintShowSplitSelection(Global.currentPerSplit);
 
-  setLed(7, 4, Split[Global.currentPerSplit].colorMain, cellOn);
-  setLed(8, 5, Split[Global.currentPerSplit].colorAccent, cellOn);
+  setLed(7, 4, getPrimaryColor(Global.currentPerSplit), cellOn);
+  setLed(8, 5, getSecondaryColor(Global.currentPerSplit), cellOn);
 
   setLed(5, 3, Split[Global.currentPerSplit].colorSequencerEmpty, cellOn);
   setLed(6, 3, Split[Global.currentPerSplit].colorSequencerEmpty, cellOn);
@@ -1595,7 +1595,6 @@ void handleSequencerColorsNewTouch() {
 void handleSequencerColorsRelease() {
   handleShowSplit();
 }
-
 
 //
 // SequencerPattern methods
@@ -2620,10 +2619,10 @@ void StepSequencerState::paintCurrentPatternStep(byte stepNum) {
               // determine the cell's color based on the velocity value
               byte cellColor = COLOR_OFF;
               if (event.getVelocity() > 96) {
-                cellColor = Split[split].colorAccent;
+                cellColor = getSecondaryColor(split);
               }
               else {
-                cellColor = Split[split].colorMain;
+                cellColor = getPrimaryColor(split);
               }
 
               byte row = 1 + seqRow;
@@ -2711,7 +2710,7 @@ void StepSequencerState::paintMuter() {
 void StepSequencerState::paintPatternSelector() {
   for (byte pattern = 0; pattern < MAX_SEQUENCER_PATTERNS; ++pattern) {
     int col = SEQ_PATTERN_SELECTOR_LEFT + pattern;
-    byte leftColor = (pattern == seqState[LEFT].currentPattern ? Split[LEFT].colorAccent : Split[LEFT].colorMain);
+    byte leftColor = (pattern == seqState[LEFT].currentPattern ? getSecondaryColor(LEFT) : getPrimaryColor(LEFT));
     CellDisplay leftDisplay = (pattern == seqState[LEFT].nextPattern ? cellSlowPulse : cellOn);
     if (sequencerCopySplitSource == LEFT && sequencerCopyPatternSource == pattern) {
       leftDisplay = cellFastPulse;
@@ -2719,7 +2718,7 @@ void StepSequencerState::paintPatternSelector() {
 
     setLed(col, SEQ_PATTERN_SELECTOR_TOP, leftColor, leftDisplay);
 
-    byte rightColor = (pattern == seqState[RIGHT].currentPattern ? Split[RIGHT].colorAccent : Split[RIGHT].colorMain);
+    byte rightColor = (pattern == seqState[RIGHT].currentPattern ? getSecondaryColor(RIGHT) : getPrimaryColor(RIGHT));
     CellDisplay rightDisplay = (pattern == seqState[RIGHT].nextPattern ? cellSlowPulse : cellOn);
     if (sequencerCopySplitSource == RIGHT && sequencerCopyPatternSource == pattern) {
       rightDisplay = cellFastPulse;
@@ -2744,8 +2743,8 @@ void StepSequencerState::paintPerformanceSettings() {
       modeCellDisplayBottom = cellOn;
       break;
   }
-  setLed(SEQ_VIEW_COLUMN, SEQ_VIEW_TOP, Split[split].colorMain, modeCellDisplayTop);
-  setLed(SEQ_VIEW_COLUMN, SEQ_VIEW_BOTTOM, Split[split].colorMain, modeCellDisplayBottom);
+  setLed(SEQ_VIEW_COLUMN, SEQ_VIEW_TOP, getPrimaryColor(split), modeCellDisplayTop);
+  setLed(SEQ_VIEW_COLUMN, SEQ_VIEW_BOTTOM, getPrimaryColor(split), modeCellDisplayBottom);
 
   CellDisplay stepSize1CellDisplayTop = cellOff;
   CellDisplay stepSize1CellDisplayBottom = cellOff;
@@ -2769,8 +2768,8 @@ void StepSequencerState::paintPerformanceSettings() {
       stepSize1CellDisplayBottom = cellOn;
       break;
   }
-  setLed(SEQ_STEPSIZE_LEFT, SEQ_STEPSIZE_TOP, Split[split].colorMain, stepSize1CellDisplayTop);
-  setLed(SEQ_STEPSIZE_LEFT, SEQ_STEPSIZE_BOTTOM, Split[split].colorMain, stepSize1CellDisplayBottom);
+  setLed(SEQ_STEPSIZE_LEFT, SEQ_STEPSIZE_TOP, getPrimaryColor(split), stepSize1CellDisplayTop);
+  setLed(SEQ_STEPSIZE_LEFT, SEQ_STEPSIZE_BOTTOM, getPrimaryColor(split), stepSize1CellDisplayBottom);
 
   CellDisplay stepSize2CellDisplayTop = cellOff;
   CellDisplay stepSize2CellDisplayBottom = cellOff;
@@ -2800,10 +2799,10 @@ void StepSequencerState::paintPerformanceSettings() {
         break;
     }
   }
-  setLed(SEQ_STEPSIZE_RIGHT, SEQ_STEPSIZE_TOP, Split[split].colorMain, stepSize2CellDisplayTop);
-  setLed(SEQ_STEPSIZE_RIGHT, SEQ_STEPSIZE_BOTTOM, Split[split].colorMain, stepSize2CellDisplayBottom);
+  setLed(SEQ_STEPSIZE_RIGHT, SEQ_STEPSIZE_TOP, getPrimaryColor(split), stepSize2CellDisplayTop);
+  setLed(SEQ_STEPSIZE_RIGHT, SEQ_STEPSIZE_BOTTOM, getPrimaryColor(split), stepSize2CellDisplayBottom);
 
-  setLed(SEQ_LOOPSCREEN_COLUMN, SEQ_LOOPSCREEN_ROW, Split[split].colorMain, getCurrentPattern().loopScreen ? cellOn : cellOff);
+  setLed(SEQ_LOOPSCREEN_COLUMN, SEQ_LOOPSCREEN_ROW, getPrimaryColor(split), getCurrentPattern().loopScreen ? cellOn : cellOff);
 
   CellDisplay directionCellDisplay = cellOff;
   if (getCurrentPattern().sequencerDirection != sequencerForward) {
@@ -2814,9 +2813,9 @@ void StepSequencerState::paintPerformanceSettings() {
 
 byte StepSequencerState::getDirectionColor() {
   if (getCurrentPattern().sequencerDirection == sequencerPingPong) {
-    return Split[split].colorAccent;
+    return getSecondaryColor(split);
   }
-  return Split[split].colorMain;
+  return getPrimaryColor(split);
 }
 
 void StepSequencerState::paintNavigation() {
@@ -2867,10 +2866,10 @@ void StepSequencerState::paintFocusFader(byte row, byte value) {
 
   for (byte col = SEQ_FADER_RIGHT; col >= SEQ_FADER_LEFT; --col) {
     if (Device.calRows[col][0].fxdReferenceX - FXD_CALX_HALF_UNIT > fxdFaderPosition) {
-      setLed(col, row, Split[split].colorMain, cellOn);
+      setLed(col, row, getPrimaryColor(split), cellOn);
     }
     else {
-      setLed(col, row, Split[split].colorAccent, cellOn);
+      setLed(col, row, getSecondaryColor(split), cellOn);
     }
   }
 }
@@ -2894,10 +2893,10 @@ void StepSequencerState::paintDurationFader(byte row, unsigned short duration) {
   int faderPosition = SEQ_FADER_LEFT + FXD_TO_INT(FXD_MUL(FXD_FROM_INT(index), FXD_SEQ_DURATION_FADER_RATIO));
   for (byte col = SEQ_FADER_RIGHT; col >= SEQ_FADER_LEFT; --col) {
     if (col > faderPosition) {
-      setLed(col, row, Split[split].colorMain, display);
+      setLed(col, row, getPrimaryColor(split), display);
     }
     else {
-      setLed(col, row, Split[split].colorAccent, display);
+      setLed(col, row, getSecondaryColor(split), display);
     }
   }
 }
@@ -2911,7 +2910,7 @@ void StepSequencerState::paintPitchOffsetFader(byte row, short pitchOffset) {
         clearLed(col, row);
       }
       else {
-        setLed(col, row, Split[split].colorAccent, cellOn);
+        setLed(col, row, getSecondaryColor(split), cellOn);
       }
     }
   }
