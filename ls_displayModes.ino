@@ -1506,7 +1506,6 @@ void displayNoteAssignedColors() {
     for (byte col = 2; col <= 4; ++col) {
       byte note = (col - 2) + (row * 3);
       byte color = Global.noteAssignedColors[note];
-      if (color == 0) color = COLOR_GREEN; // TODO: testing
       setLed(col, row, color, cellOn);
     }
   }
