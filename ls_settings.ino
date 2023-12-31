@@ -2563,6 +2563,7 @@ void handleGlobalSettingNewTouch() {
     // select Scale Notes or Accent Notes
     switch (sensorCol) {
       case 1:
+// jaysullivan: touch MAIN/ACCENT/SCALE-SEL on column 1 (global settings)
         switch (sensorRow) {
           case LIGHTS_ACCENT:
             accentColor = colorCycle(accentColor, false);
@@ -2573,12 +2574,14 @@ void handleGlobalSettingNewTouch() {
               lightSettings = sensorRow;
             }
             break;
+// jaysullivan: touch col1row3 (hidden left-hand button) (global settings)
           case 3:
             // handled at release
             break;
         }
         break;
 
+// jaysullivan: touch note pads on columns 2,3,4 (global settings)
       case 2:
       case 3:
       case 4:
@@ -2970,6 +2973,7 @@ void handleGlobalSettingHold() {
     sensorCell->lastTouch = 0;
 
     switch (sensorCol) {
+// jaysullivan: hold col1row3 (hidden left-hand button) (global settings)
       case 1:
         switch (sensorRow) {
           case 3:
@@ -2980,6 +2984,7 @@ void handleGlobalSettingHold() {
         }
         break;
 
+// jaysullivan: hold note pads on columns 2,3,4 (global settings)
       case 2:
       case 3:
       case 4:
@@ -3113,6 +3118,7 @@ void handleGlobalSettingHold() {
 }
 
 void handleGlobalSettingRelease() {
+// jaysullivan: release col1row3 (hidden left-hand button) (global settings)
   if (sensorCol == 1 && sensorRow == 3 &&
       ensureCellBeforeHoldWait(getSplitHandednessColor(), Device.otherHanded ? cellOn : cellOff)) {
     Device.otherHanded = !Device.otherHanded;
