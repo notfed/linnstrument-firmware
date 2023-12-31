@@ -1652,17 +1652,22 @@ void paintGlobalSettingsDisplay() {
       setLed(1, 3, getSplitHandednessColor(), cellOn);
     }
 
+// jaysullivan: redraw light settings (global settings)
     switch (lightSettings) {
       case LIGHTS_MAIN:
         accentColor = COLOR_BLACK;
         if (!customLedPatternActive) {
           lightLed(1, 0);
-          displayNoteLights(Global.mainNotes[Global.activeNotes]);
+          // TODO: Feature toggle?
+          // displayNoteLights(Global.mainNotes[Global.activeNotes]);
+          byte scaleId = Global.activeNotes;
+          scaleDisplay(scaleId);
         }
         break;
       case LIGHTS_ACCENT:
         if (!customLedPatternActive) {
           setLed(1, 1, accentColor, cellOn);
+          // TODO: Feature toggle?
           // displayNoteLights(Global.accentNotes[Global.activeNotes]);
           displayNoteAssignedColors();
         }

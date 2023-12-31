@@ -2341,15 +2341,6 @@ void handleSplitPointNewTouch() {
   updateDisplay();
 }
 
-// This manages the toggling of the note light cells (columns 2-4 and rows 0-3)
-void toggleNoteLights(int& notelights) {
-  if (sensorCol < 2 || sensorCol > 4 || sensorRow > 3) {
-    return;
-  }
-
-  byte light = sensorCol-2 + (sensorRow*3);
-  notelights ^= 1 << light;
-}
 
 void setNoteAssignedColor(byte note, byte color) {
   Global.noteAssignedColors[note] = color;
@@ -2586,27 +2577,26 @@ void handleGlobalSettingNewTouch() {
       case 3:
       case 4:
         if (sensorRow >= 0 && sensorRow <= 3) {
-          byte currentNote = sensorCol-2 + (sensorRow*3);
           // select individual scale notes or accent notes
           switch (lightSettings) {
             case LIGHTS_MAIN:
-              if (!customLedPatternActive) {
-                toggleNoteLights(Global.mainNotes[Global.activeNotes]);
-              }
+              // handled at release
               break;
             case LIGHTS_ACCENT:
               if (!customLedPatternActive) {
                 // TODO: Do we ever need to fallback to this?
                 // toggleNoteLights(Global.accentNotes[Global.activeNotes]);
-                if (getNoteAssignedColor(currentNote) != accentColor) {
-                  setNoteAssignedColor(currentNote, accentColor);
+                byte pressedNote = noteAtCell(sensorCol, sensorRow);
+                if (getNoteAssignedColor(pressedNote) != accentColor) {
+                  setNoteAssignedColor(pressedNote, accentColor);
                 } else {
-                  setNoteAssignedColor(currentNote, COLOR_BLACK);
+                  setNoteAssignedColor(pressedNote, COLOR_BLACK);
                 }
               }
               break;
             case LIGHTS_ACTIVE:
-              Global.activeNotes = currentNote;
+              byte pressedNote = noteAtCell(sensorCol, sensorRow);
+              Global.activeNotes = pressedNote;
               loadCustomLedLayer(-1);
               break;
           }
@@ -2973,7 +2963,7 @@ void handleGlobalSettingHold() {
     sensorCell->lastTouch = 0;
 
     switch (sensorCol) {
-// jaysullivan: hold col1row3 (hidden left-hand button) (global settings)
+// jaysullivan: long-hold-then-release col1row3 (hidden left-hand button) (global settings)
       case 1:
         switch (sensorRow) {
           case 3:
@@ -2984,14 +2974,29 @@ void handleGlobalSettingHold() {
         }
         break;
 
-// jaysullivan: hold note pads on columns 2,3,4 (global settings)
+// jaysullivan: long-hold-then-release note pads on columns 2,3,4 (global settings)
       case 2:
       case 3:
       case 4:
-        if (lightSettings == LIGHTS_ACTIVE && sensorRow == 3) {
-            cellTouched(ignoredCell);
-            loadCustomLedLayer(getActiveCustomLedPattern());
-            setDisplayMode(displayCustomLedsEditor);
+        // TODO: Temporarily disabled. How should we access custom color grid?
+        // if (lightSettings == LIGHTS_ACTIVE && sensorRow == 3) {
+        //     cellTouched(ignoredCell);
+        //     loadCustomLedLayer(getActiveCustomLedPattern());
+        //     setDisplayMode(displayCustomLedsEditor);
+        //     updateDisplay();
+        // }
+
+        if (lightSettings == LIGHTS_MAIN && sensorRow >= 0 && sensorRow <= 3) {
+            // In [GLOBAL SETTINGS]->[MAIN], a scale note was long-held.
+            byte activeScaleId = Global.activeNotes;
+            byte pressedNote = noteAtCell(sensorCol, sensorRow);
+            // If this note is in the scale, make this note the scale's tonic note.
+            if (scaleContainsNote(activeScaleId, pressedNote) &&
+                scaleGetTonic(activeScaleId) != pressedNote) {
+              scaleSetTonic(activeScaleId, pressedNote);
+            } else {
+              scaleSetTonic(activeScaleId, -1);
+            }
             updateDisplay();
         }
         break;
@@ -3118,10 +3123,27 @@ void handleGlobalSettingHold() {
 }
 
 void handleGlobalSettingRelease() {
-// jaysullivan: release col1row3 (hidden left-hand button) (global settings)
+// jaysullivan: quick-release col1row3 (hidden left-hand button) (global settings)
   if (sensorCol == 1 && sensorRow == 3 &&
       ensureCellBeforeHoldWait(getSplitHandednessColor(), Device.otherHanded ? cellOn : cellOff)) {
     Device.otherHanded = !Device.otherHanded;
+  }
+
+// jaysullivan: quick-release columns 2,3,4 (note pads) (global settings)
+  else if (lightSettings == LIGHTS_MAIN && sensorCol >= 2 && sensorCol <= 4 && sensorRow >= 0 && sensorRow <= 3 &&
+      ensureCellBeforeHoldWait(COLOR_BLACK, cellOn)) {
+    if (!customLedPatternActive) {
+      // In [GLOBAL SETTINGS]->[MAIN], a scale note was tapped.
+      byte activeScaleId = Global.activeNotes;
+      byte pressedNote = noteAtCell(sensorCol, sensorRow);
+      // Toggle this note in the scale.
+      scaleToggleNote(activeScaleId, pressedNote);
+      // Clear the tonic note if it's not in the scale
+      byte activeScaleTonic = scaleGetTonic(activeScaleId);
+      if (!scaleContainsNote(activeScaleId, activeScaleTonic)) {
+        scaleSetTonic(activeScaleId, -1);
+      }
+    }
   }
   else if (sensorCol == 6 && sensorRow == 2 &&
       ensureCellBeforeHoldWait(globalColor, Global.rowOffset == ROWOFFSET_OCTAVECUSTOM ? cellOn : cellOff)) {
