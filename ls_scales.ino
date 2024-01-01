@@ -22,20 +22,32 @@ boolean scaleContainsNote(byte scaleId, byte note) {
   return *scale & 1 << note;
 }
 
-byte scaleGetTonic(byte scaleId) {
+byte scaleGetColorOffset() {
+  return Global.scaleColorOffset - 1;
+}
+
+void scaleSetColorOffset(byte offset) {
+  if (offset > 11) {
+    Global.scaleColorOffset = 0;
+  } else {
+    Global.scaleColorOffset = offset + 1;
+  }
+}
+
+byte scaleGetTonicNote(byte scaleId) {
   if (scaleId > 11) {
     return 0;
   }
-  return Global.scaleTonic[scaleId] - 1;
+  return Global.scaleTonicNote[scaleId] - 1;
 }
 
-void scaleSetTonic(byte scaleId, byte tonic) {
+void scaleSetTonicNote(byte scaleId, byte tonic) {
   if (scaleId > 11) {
     return;
   } else if (tonic > 11) {
-    Global.scaleTonic[scaleId] = 0;
+    Global.scaleTonicNote[scaleId] = 0;
   } else {
-    Global.scaleTonic[scaleId] = tonic + 1;
+    Global.scaleTonicNote[scaleId] = tonic + 1;
   }
 }
 
@@ -93,7 +105,8 @@ void scaleRedrawAccent() {
     for (byte col = 2; col <= 4; ++col) {
       byte note = noteAtCell(col, row);
       byte color = Global.noteAssignedColors[note];
-      setLed(col, row, color, cellOn);
+      boolean isColorOffset = scaleGetColorOffset() == note;
+      setLed(col, row, color, isColorOffset ? cellSlowPulse : cellOn);
     }
   }
 }
@@ -101,7 +114,7 @@ void scaleRedrawAccent() {
 // [GLOBAL SETTINGS]->MAIN :: Draw all notes (of the current scale)
 void scaleRedrawMain() {
   byte scaleId = Global.activeNotes;
-  byte tonic = scaleGetTonic(scaleId);
+  byte tonic = scaleGetTonicNote(scaleId);
 
   for (byte row = 0; row <= 3; ++row) {
     for (byte col = 2; col <= 4; ++col) {
@@ -135,7 +148,7 @@ void scaleCellOnTouchStart(byte sensorCol, byte sensorRow) {
   }
 }
 
-// Called right after scaleCellOnTouchStart, gives us a chance to start pulsing a holdable cell
+// Called after scaleCellOnTouchStart, gives us a chance to start pulsing a holdable cell
 void scaleCellOnTouchStartHold(byte sensorCol, byte sensorRow) {
   byte activeScaleId = Global.activeNotes;
   byte note = noteAtCell(sensorCol, sensorRow);
@@ -185,15 +198,16 @@ void scaleCellOnTouchEnd(byte sensorCol, byte sensorRow) {
       // Toggle this note in the scale.
       scaleToggleNote(activeScaleId, pressedNote);
       // Clear the tonic note if it's not in the scale
-      byte activeScaleTonic = scaleGetTonic(activeScaleId);
+      byte activeScaleTonic = scaleGetTonicNote(activeScaleId);
       if (!scaleContainsNote(activeScaleId, activeScaleTonic)) {
-        scaleSetTonic(activeScaleId, -1);
+        scaleSetTonicNote(activeScaleId, -1);
       }
     }
   }
 }
 
 void scaleCellOnHold(byte sensorCol, byte sensorRow) {
+  byte activeScaleId = Global.activeNotes;
   byte pressedNote = noteAtCell(sensorCol, sensorRow);
   if (pressedNote>11) {
     return;
@@ -207,16 +221,25 @@ void scaleCellOnHold(byte sensorCol, byte sensorRow) {
   //   updateDisplay();
   // }
 
+  if (lightSettings == LIGHTS_ACCENT) {
+      // In [GLOBAL SETTINGS]->[ACCENT], a scale note was long-held.
+      // Mark this color as the color offset, which means rotate the colors to start from this color.
+      if (scaleGetColorOffset() != pressedNote) {
+        // TODO: What if user sets a non-color as the root color? How to pulse?
+        scaleSetColorOffset(pressedNote);
+      } else {
+        scaleSetColorOffset(-1);
+      }
+      updateDisplay();
+  }
   if (lightSettings == LIGHTS_MAIN) {
       // In [GLOBAL SETTINGS]->[MAIN], a scale note was long-held.
-      byte activeScaleId = Global.activeNotes;
-      byte pressedNote = noteAtCell(sensorCol, sensorRow);
-      // If this note is in the scale, make this note the scale's tonic note.
+      // Mark this note as the tonic note, which means rotate the scale to start from this note.
       if (scaleContainsNote(activeScaleId, pressedNote) &&
-          scaleGetTonic(activeScaleId) != pressedNote) {
-        scaleSetTonic(activeScaleId, pressedNote);
+          scaleGetTonicNote(activeScaleId) != pressedNote) {
+        scaleSetTonicNote(activeScaleId, pressedNote);
       } else {
-        scaleSetTonic(activeScaleId, -1);
+        scaleSetTonicNote(activeScaleId, -1);
       }
       updateDisplay();
   }

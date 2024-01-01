@@ -754,7 +754,8 @@ struct GlobalSettings {
   byte currentPerSplit;                      // controls which split's settings are being displayed
   byte activeNotes;                          // controls which collection of note lights presets is active
   int mainNotes[12];                         // bitmask array that determines which notes receive "main" lights
-  byte scaleTonic[12];                       // Assigns a "tonic note" to each scale (1-indexed; 0 means unassigned). Represents the user-defined scale's mode.
+  byte scaleTonicNote[12];                   // Assigns a "tonic note" to each scale. This is 1-indexed (0 means unassigned). The scale will be rotated to start from this note rather than C.
+  byte scaleColorOffset;                     // Assigns a "color offset" to the scale colors. This is 1-indexed (0 means unassigned). The colors will be rotated such that the C note will be this color. 
   int accentNotes[12];                       // bitmask array that determines which notes receive accent lights (octaves, white keys, black keys, etc.)
   byte noteAssignedColors[12];               // Assign a color to each note
   byte rowOffset;                            // interval between rows. 0 = no overlap, 1-12 = interval, 13 = guitar
