@@ -1490,6 +1490,7 @@ void paintTranspose(byte color, byte row, short transpose) {
   }
 }
 
+// TODO: Move
 void displayNoteLights(int notelights) {
   for (byte row = 0; row < 4; ++row) {
     for (byte col = 0; col < 3; ++col) {
@@ -1501,6 +1502,7 @@ void displayNoteLights(int notelights) {
   }
 }
 
+// TODO: Move
 void displayNoteAssignedColors() {
   for (byte row = 0; row <= 3; ++row) {
     for (byte col = 2; col <= 4; ++col) {
@@ -1511,6 +1513,7 @@ void displayNoteAssignedColors() {
   }
 }
 
+// TODO: Move
 void displayActiveNotes() {
   for (byte row = 0; row < 4; ++row) {
     for (byte col = 0; col < 3; ++col) {
@@ -1653,31 +1656,7 @@ void paintGlobalSettingsDisplay() {
     }
 
 // jaysullivan: redraw light settings (global settings)
-    switch (lightSettings) {
-      case LIGHTS_MAIN:
-        accentColor = COLOR_BLACK;
-        if (!customLedPatternActive) {
-          lightLed(1, 0);
-          // TODO: Feature toggle?
-          // displayNoteLights(Global.mainNotes[Global.activeNotes]);
-          byte scaleId = Global.activeNotes;
-          scaleDisplay(scaleId);
-        }
-        break;
-      case LIGHTS_ACCENT:
-        if (!customLedPatternActive) {
-          setLed(1, 1, accentColor, cellOn);
-          // TODO: Feature toggle?
-          // displayNoteLights(Global.accentNotes[Global.activeNotes]);
-          displayNoteAssignedColors();
-        }
-        break;
-      case LIGHTS_ACTIVE:
-        accentColor = COLOR_BLACK;
-        lightLed(1, 2);
-        displayActiveNotes();
-        break;
-    }
+    scaleRedraw();
 
     switch (Global.rowOffset) {
       case ROWOFFSET_NOOVERLAP: // no overlap
