@@ -2818,6 +2818,11 @@ void handleGlobalSettingNewTouch() {
   switch (sensorCol) {
     case 1:
       switch (sensorRow) {
+        case LIGHTS_ACCENT:
+        case LIGHTS_MAIN:
+        case LIGHTS_ACTIVE:
+          scaleCellOnTouchStartHold(sensorCol, sensorRow);
+          break;
         case 3:
           setLed(sensorCol, sensorRow, getSplitHandednessColor(), cellSlowPulse);
           break;
@@ -2924,6 +2929,11 @@ void handleGlobalSettingHold() {
     switch (sensorCol) {
       case 1:
         switch (sensorRow) {
+          case LIGHTS_ACCENT:
+          case LIGHTS_MAIN:
+          case LIGHTS_ACTIVE:
+            scaleCellOnHold(sensorCol, sensorRow); 
+            break;
           case 3:
             resetNumericDataChange();
             setDisplayMode(displaySplitHandedness);

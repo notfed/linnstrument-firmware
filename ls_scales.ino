@@ -1,3 +1,4 @@
+static boolean isDraggingColors = false;
 
 byte noteAtCell(byte col, byte row) {
   if (!(col >= 2 && col <= 4 && row >= 0 && row <= 3)) {
@@ -135,8 +136,6 @@ void scaleCellOnTouchStart(byte sensorCol, byte sensorRow) {
     case 1:
       switch (sensorRow) {
         case LIGHTS_ACCENT:
-          accentColor = colorCycle(accentColor, false);
-          setLed(1, 1, accentColor, cellOn);
         case LIGHTS_MAIN:
         case LIGHTS_ACTIVE:
           if (!customLedPatternActive) {
@@ -151,6 +150,10 @@ void scaleCellOnTouchStart(byte sensorCol, byte sensorRow) {
 // Called after scaleCellOnTouchStart, gives us a chance to start pulsing a holdable cell
 void scaleCellOnTouchStartHold(byte sensorCol, byte sensorRow) {
   byte activeScaleId = Global.activeNotes;
+
+  if (sensorCol == 1 && sensorRow == LIGHTS_ACCENT && lightSettings == LIGHTS_ACCENT) {
+    setLed(sensorCol, sensorRow, accentColor, cellSlowPulse);
+  }
   byte note = noteAtCell(sensorCol, sensorRow);
   if (note > 11) {
     return;
@@ -171,6 +174,12 @@ void scaleCellOnTouchStartHold(byte sensorCol, byte sensorRow) {
 
 void scaleCellOnTouchEnd(byte sensorCol, byte sensorRow) {
   byte activeScaleId = Global.activeNotes;
+
+  if (sensorCol == 1 && sensorRow == LIGHTS_ACCENT && lightSettings == LIGHTS_ACCENT) {
+      accentColor = colorCycle(accentColor, false);
+      setLed(1, 1, accentColor, cellOn);
+  }
+  
   byte pressedNote = noteAtCell(sensorCol, sensorRow);
   if (pressedNote>11) {
     return;
@@ -184,7 +193,7 @@ void scaleCellOnTouchEnd(byte sensorCol, byte sensorRow) {
   }
   else if (lightSettings == LIGHTS_ACCENT &&
       ensureCellBeforeHoldWait(COLOR_BLACK, cellOn)) {
-    if (!customLedPatternActive) {
+    if (!customLedPatternActive) { // TODO: Lift these checks to function start
       if (scaleGetNoteColor(pressedNote) != accentColor) {
         scaleSetNoteColor(pressedNote, accentColor);
       } else {
@@ -208,10 +217,6 @@ void scaleCellOnTouchEnd(byte sensorCol, byte sensorRow) {
 
 void scaleCellOnHold(byte sensorCol, byte sensorRow) {
   byte activeScaleId = Global.activeNotes;
-  byte pressedNote = noteAtCell(sensorCol, sensorRow);
-  if (pressedNote>11) {
-    return;
-  }
 
   // TODO: Temporarily disabled. How should we access custom color grid?
   // if (lightSettings == LIGHTS_ACTIVE && sensorRow == 3) {
@@ -220,7 +225,22 @@ void scaleCellOnHold(byte sensorCol, byte sensorRow) {
   //   setDisplayMode(displayCustomLedsEditor);
   //   updateDisplay();
   // }
+  if (sensorCol == 1 && sensorRow == LIGHTS_ACCENT && lightSettings == LIGHTS_ACCENT) {
+    // The [GLOBAL SETTINGS]->[ACCENT] button was long-held.
+    // Permute the colors into fifths.
+    for (byte note = 1; note <= 5; note+=2) {
+      byte curColor = Global.noteAssignedColors[note];
+      byte fifthColor = Global.noteAssignedColors[(note+6)%12];
+      Global.noteAssignedColors[(note+6)%12] = curColor;
+      Global.noteAssignedColors[note] = fifthColor;
+    }
+    updateDisplay();
+  }
 
+  byte pressedNote = noteAtCell(sensorCol, sensorRow);
+  if (pressedNote>11) {
+    return;
+  }
   if (lightSettings == LIGHTS_ACCENT) {
       // In [GLOBAL SETTINGS]->[ACCENT], a scale note was long-held.
       // Mark this color as the color offset, which means rotate the colors to start from this color.
