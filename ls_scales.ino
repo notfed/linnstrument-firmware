@@ -7,7 +7,7 @@ byte noteAtCell(byte col, byte row) {
 }
 
 void scaleToggleNote(byte scaleId, byte note) {
-  if (note > 11) {
+  if (scaleId > 11 || note > 11) {
     return;
   }
   int* scale = &Global.mainNotes[scaleId];
@@ -15,7 +15,7 @@ void scaleToggleNote(byte scaleId, byte note) {
 }
 
 boolean scaleContainsNote(byte scaleId, byte note) {
-  if (note > 11) {
+  if (scaleId > 11 || note > 11) {
     return false;
   }
   int* scale = &Global.mainNotes[scaleId];
@@ -23,15 +23,31 @@ boolean scaleContainsNote(byte scaleId, byte note) {
 }
 
 byte scaleGetTonic(byte scaleId) {
+  if (scaleId > 11) {
+    return 0;
+  }
   return Global.scaleTonic[scaleId] - 1;
 }
 
 void scaleSetTonic(byte scaleId, byte tonic) {
-  if (tonic >= 0 && tonic <= 11) {
-    Global.scaleTonic[scaleId] = tonic + 1;
-  } else {
+  if (scaleId > 11) {
+    return;
+  } else if (tonic > 11) {
     Global.scaleTonic[scaleId] = 0;
+  } else {
+    Global.scaleTonic[scaleId] = tonic + 1;
   }
+}
+
+void scaleSetNoteColor(byte note, byte color) {
+  Global.noteAssignedColors[note] = color;
+}
+
+byte scaleGetNoteColor(byte note) {
+  if (note > 11) {
+    return COLOR_OFF;
+  }
+  return Global.noteAssignedColors[note];
 }
 
 void scaleRedraw() {
@@ -119,7 +135,29 @@ void scaleCellOnTouchStart(byte sensorCol, byte sensorRow) {
   }
 }
 
+// Called right after scaleCellOnTouchStart, gives us a chance to start pulsing a holdable cell
+void scaleCellOnTouchStartHold(byte sensorCol, byte sensorRow) {
+  byte activeScaleId = Global.activeNotes;
+  byte note = noteAtCell(sensorCol, sensorRow);
+  if (note > 11) {
+    return;
+  }
+  if (lightSettings == LIGHTS_MAIN) {
+    if (scaleContainsNote(activeScaleId, note)) {
+      setLed(sensorCol, sensorRow, globalColor, cellSlowPulse);
+    }
+  } else if (lightSettings == LIGHTS_ACCENT) {
+    if (scaleContainsNote(activeScaleId, note)) {
+      byte currentColor = scaleGetNoteColor(note);
+      setLed(sensorCol, sensorRow, currentColor, cellSlowPulse);
+    }
+  } else if (lightSettings == LIGHTS_ACTIVE) {
+      setLed(sensorCol, sensorRow, globalColor, cellSlowPulse);
+  }
+}
+
 void scaleCellOnTouchEnd(byte sensorCol, byte sensorRow) {
+  byte activeScaleId = Global.activeNotes;
   byte pressedNote = noteAtCell(sensorCol, sensorRow);
   if (pressedNote>11) {
     return;
@@ -134,17 +172,16 @@ void scaleCellOnTouchEnd(byte sensorCol, byte sensorRow) {
   else if (lightSettings == LIGHTS_ACCENT &&
       ensureCellBeforeHoldWait(COLOR_BLACK, cellOn)) {
     if (!customLedPatternActive) {
-      if (getNoteAssignedColor(pressedNote) != accentColor) {
-        setNoteAssignedColor(pressedNote, accentColor);
+      if (scaleGetNoteColor(pressedNote) != accentColor) {
+        scaleSetNoteColor(pressedNote, accentColor);
       } else {
-        setNoteAssignedColor(pressedNote, COLOR_BLACK);
+        scaleSetNoteColor(pressedNote, COLOR_BLACK);
       }
     }
   }
   else if (lightSettings == LIGHTS_MAIN &&
       ensureCellBeforeHoldWait(COLOR_BLACK, cellOn)) {
     if (!customLedPatternActive) {
-      byte activeScaleId = Global.activeNotes;
       // Toggle this note in the scale.
       scaleToggleNote(activeScaleId, pressedNote);
       // Clear the tonic note if it's not in the scale
@@ -182,20 +219,5 @@ void scaleCellOnHold(byte sensorCol, byte sensorRow) {
         scaleSetTonic(activeScaleId, -1);
       }
       updateDisplay();
-  }
-}
-
-boolean scaleCellIsHoldable(byte sensorCol, byte sensorRow) {
-  byte activeScaleId = Global.activeNotes;
-  byte note = noteAtCell(sensorCol, sensorRow);
-  if (note > 11) {
-    return false;
-  }
-  if (lightSettings == LIGHTS_MAIN) {
-    return scaleContainsNote(activeScaleId, note);
-  } else if (lightSettings == LIGHTS_ACCENT) {
-    return true;
-  } else if (lightSettings == LIGHTS_ACTIVE) {
-    return true;
   }
 }

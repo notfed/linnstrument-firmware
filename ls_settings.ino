@@ -2341,15 +2341,6 @@ void handleSplitPointNewTouch() {
   updateDisplay();
 }
 
-
-void setNoteAssignedColor(byte note, byte color) {
-  Global.noteAssignedColors[note] = color;
-}
-
-byte getNoteAssignedColor(byte note) {
-  return Global.noteAssignedColors[note];
-}
-
 boolean isArpeggiatorTempoTriplet() {
   return Global.arpTempo == ArpEighthTriplet || Global.arpTempo == ArpSixteenthTriplet || Global.arpTempo == ArpThirtysecondTriplet;
 }
@@ -2836,9 +2827,7 @@ void handleGlobalSettingNewTouch() {
     case 2:
     case 3:
     case 4:
-      if (scaleCellIsHoldable(sensorCol, sensorRow)) {
-        setLed(sensorCol, sensorRow, globalColor, cellSlowPulse);
-      }
+      scaleCellOnTouchStartHold(sensorCol, sensorRow);
       break;
 
     case 6:
