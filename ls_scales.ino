@@ -1,13 +1,11 @@
-static boolean isDraggingColors = false;
-
-byte noteAtCell(byte col, byte row) {
+static byte noteAtCell(byte col, byte row) {
   if (!(col >= 2 && col <= 4 && row >= 0 && row <= 3)) {
     return -1;
   }
   return (col - 2) + (row * 3);
 }
 
-void scaleToggleNote(byte scaleId, byte note) {
+static void scaleToggleNote(byte scaleId, byte note) {
   if (scaleId > 11 || note > 11) {
     return;
   }
@@ -15,7 +13,7 @@ void scaleToggleNote(byte scaleId, byte note) {
   *scale ^= 1 << note;
 }
 
-boolean scaleContainsNote(byte scaleId, byte note) {
+static boolean scaleContainsNote(byte scaleId, byte note) {
   if (scaleId > 11 || note > 11) {
     return false;
   }
@@ -23,11 +21,11 @@ boolean scaleContainsNote(byte scaleId, byte note) {
   return *scale & 1 << note;
 }
 
-byte scaleGetColorOffset() {
+static byte scaleGetAssignedColorOffset() {
   return Global.scaleColorOffset - 1;
 }
 
-void scaleSetColorOffset(byte offset) {
+static void scaleSetAssignedColorOffset(byte offset) {
   if (offset > 11) {
     Global.scaleColorOffset = 0;
   } else {
@@ -35,14 +33,33 @@ void scaleSetColorOffset(byte offset) {
   }
 }
 
-byte scaleGetMode(byte scaleId) {
+static byte scaleGetEffectiveColorOffset() {
+  if (Global.scaleColorOffset == -1) {
+    return 0;
+  } else {
+    return Global.scaleColorOffset - 1;
+  }
+}
+
+static byte scaleGetAssignedMode(byte scaleId) {
   if (scaleId > 11) {
     return 0;
   }
   return Global.scaleMode[scaleId] - 1;
 }
 
-void scaleSetMode(byte scaleId, byte mode) {
+static byte scaleGetEffectiveMode(byte scaleId) {
+  if (scaleId > 11) {
+    return 0;
+  }
+  byte mode = Global.scaleMode[scaleId] - 1;
+  if (mode > 11) {
+    return 0;
+  }
+  return Global.scaleMode[scaleId] - 1;
+}
+
+static void scaleSetAssignedMode(byte scaleId, byte mode) {
   if (scaleId > 11) {
     return;
   } else if (mode > 11) {
@@ -58,14 +75,10 @@ static int rotateRight12(int x, int n) {
     x &= 0xFFF;
     return x;
 }
-// x= 0b00000101, n=3
 
 int scaleGetEffectiveScale() {
   int activeScaleId = Global.activeNotes;
-  byte mode = scaleGetMode(activeScaleId);
-  if (mode > 11) {
-    mode = 0;
-  }
+  byte mode = scaleGetEffectiveMode(activeScaleId);
   return rotateRight12(Global.mainNotes[activeScaleId], mode);
 }
 
@@ -73,7 +86,7 @@ byte scaleGetEffectiveNoteColor(byte note) {
   if (note > 11) {
     return COLOR_OFF;
   }
-  return Global.scaleNoteColors[(note + Global.scaleColorOffset) % 12];
+  return Global.scaleNoteColors[(note + scaleGetEffectiveColorOffset()) % 12];
 }
 
 void scaleRedraw() {
@@ -100,7 +113,7 @@ void scaleRedraw() {
 }
 
 // [GLOBAL SETTINGS]->[SCALE SEL] :: Show which scale is currently active
-void scaleRedrawScaleSel() {
+static void scaleRedrawScaleSel() {
   byte scaleId = Global.activeNotes;
   for (byte row = 0; row <= 3; ++row) {
     for (byte col = 2; col <= 4; ++col) {
@@ -113,22 +126,22 @@ void scaleRedrawScaleSel() {
 }
 
 // [GLOBAL SETTINGS]->ACCENT :: Draw each note's configured color (of the current scale)
-void scaleRedrawAccent() {
+static void scaleRedrawAccent() {
   byte scaleId = Global.activeNotes;
   for (byte row = 0; row <= 3; ++row) {
     for (byte col = 2; col <= 4; ++col) {
       byte note = noteAtCell(col, row);
       byte color = Global.scaleNoteColors[note];
-      boolean isColorOffset = scaleGetColorOffset() == note;
+      boolean isColorOffset = scaleGetAssignedColorOffset() == note;
       setLed(col, row, color, isColorOffset ? cellSlowPulse : cellOn);
     }
   }
 }
 
 // [GLOBAL SETTINGS]->MAIN :: Draw all notes (of the current scale)
-void scaleRedrawMain() {
+static void scaleRedrawMain() {
   byte scaleId = Global.activeNotes;
-  byte mode = scaleGetMode(scaleId);
+  byte mode = scaleGetAssignedMode(scaleId);
 
   for (byte row = 0; row <= 3; ++row) {
     for (byte col = 2; col <= 4; ++col) {
@@ -220,9 +233,9 @@ void scaleCellOnTouchEnd(byte sensorCol, byte sensorRow) {
       // Toggle this note in the scale.
       scaleToggleNote(activeScaleId, pressedNote);
       // TODO: Clear the mode note if it's not in the scale
-      // byte mode = scaleGetMode(activeScaleId);
+      // byte mode = scaleGetAssignedMode(activeScaleId);
       // if (!scaleContainsNote(activeScaleId, mode)) {
-      //   scaleSetMode(activeScaleId, -1);
+      //   scaleSetAssignedMode(activeScaleId, -1);
       // }
     }
   }
@@ -257,11 +270,11 @@ void scaleCellOnHold(byte sensorCol, byte sensorRow) {
   if (lightSettings == LIGHTS_ACCENT) {
       // In [GLOBAL SETTINGS]->[ACCENT], a scale note was long-held.
       // Mark this color as the color offset, which means rotate the colors to start from this color.
-      if (scaleGetColorOffset() != pressedNote) {
+      if (scaleGetAssignedColorOffset() != pressedNote) {
         // TODO: What if user sets a non-color as the root color? How to pulse?
-        scaleSetColorOffset(pressedNote);
+        scaleSetAssignedColorOffset(pressedNote);
       } else {
-        scaleSetColorOffset(-1);
+        scaleSetAssignedColorOffset(-1);
       }
       updateDisplay();
   }
@@ -271,17 +284,17 @@ void scaleCellOnHold(byte sensorCol, byte sensorRow) {
 
       // TODO: Fix edge cases
       // if (scaleContainsNote(activeScaleId, pressedNote) &&
-      //     scaleGetMode(activeScaleId) != pressedNote) {
-      //   scaleSetMode(activeScaleId, pressedNote);
+      //     scaleGetAssignedMode(activeScaleId) != pressedNote) {
+      //   scaleSetAssignedMode(activeScaleId, pressedNote);
       // } else {
-      //   scaleSetMode(activeScaleId, -1);
+      //   scaleSetAssignedMode(activeScaleId, -1);
       // }
 
       if (scaleContainsNote(activeScaleId, pressedNote) &&
-          scaleGetMode(activeScaleId) != pressedNote) {
-        scaleSetMode(activeScaleId, pressedNote);      
+          scaleGetAssignedMode(activeScaleId) != pressedNote) {
+        scaleSetAssignedMode(activeScaleId, pressedNote);      
       } else {
-        scaleSetMode(activeScaleId, -1);
+        scaleSetAssignedMode(activeScaleId, -1);
       }
       updateDisplay();
   }
