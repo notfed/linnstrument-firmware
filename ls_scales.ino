@@ -35,32 +35,32 @@ void scaleSetColorOffset(byte offset) {
   }
 }
 
-byte scaleGetTonicNote(byte scaleId) {
+byte scaleGetMode(byte scaleId) {
   if (scaleId > 11) {
     return 0;
   }
-  return Global.scaleTonicNote[scaleId] - 1;
+  return Global.scaleMode[scaleId] - 1;
 }
 
-void scaleSetTonicNote(byte scaleId, byte tonic) {
+void scaleSetMode(byte scaleId, byte mode) {
   if (scaleId > 11) {
     return;
-  } else if (tonic > 11) {
-    Global.scaleTonicNote[scaleId] = 0;
+  } else if (mode > 11) {
+    Global.scaleMode[scaleId] = 0;
   } else {
-    Global.scaleTonicNote[scaleId] = tonic + 1;
+    Global.scaleMode[scaleId] = mode + 1;
   }
 }
 
 void scaleSetNoteColor(byte note, byte color) {
-  Global.noteAssignedColors[note] = color;
+  Global.scaleNoteColors[note] = color;
 }
 
 byte scaleGetNoteColor(byte note) {
   if (note > 11) {
     return COLOR_OFF;
   }
-  return Global.noteAssignedColors[note];
+  return Global.scaleNoteColors[note];
 }
 
 void scaleRedraw() {
@@ -105,7 +105,7 @@ void scaleRedrawAccent() {
   for (byte row = 0; row <= 3; ++row) {
     for (byte col = 2; col <= 4; ++col) {
       byte note = noteAtCell(col, row);
-      byte color = Global.noteAssignedColors[note];
+      byte color = Global.scaleNoteColors[note];
       boolean isColorOffset = scaleGetColorOffset() == note;
       setLed(col, row, color, isColorOffset ? cellSlowPulse : cellOn);
     }
@@ -115,7 +115,7 @@ void scaleRedrawAccent() {
 // [GLOBAL SETTINGS]->MAIN :: Draw all notes (of the current scale)
 void scaleRedrawMain() {
   byte scaleId = Global.activeNotes;
-  byte tonic = scaleGetTonicNote(scaleId);
+  byte tonic = scaleGetMode(scaleId);
 
   for (byte row = 0; row <= 3; ++row) {
     for (byte col = 2; col <= 4; ++col) {
@@ -207,9 +207,9 @@ void scaleCellOnTouchEnd(byte sensorCol, byte sensorRow) {
       // Toggle this note in the scale.
       scaleToggleNote(activeScaleId, pressedNote);
       // Clear the tonic note if it's not in the scale
-      byte activeScaleTonic = scaleGetTonicNote(activeScaleId);
+      byte activeScaleTonic = scaleGetMode(activeScaleId);
       if (!scaleContainsNote(activeScaleId, activeScaleTonic)) {
-        scaleSetTonicNote(activeScaleId, -1);
+        scaleSetMode(activeScaleId, -1);
       }
     }
   }
@@ -229,10 +229,10 @@ void scaleCellOnHold(byte sensorCol, byte sensorRow) {
     // The [GLOBAL SETTINGS]->[ACCENT] button was long-held.
     // Permute the colors into fifths.
     for (byte note = 1; note <= 5; note+=2) {
-      byte curColor = Global.noteAssignedColors[note];
-      byte fifthColor = Global.noteAssignedColors[(note+6)%12];
-      Global.noteAssignedColors[(note+6)%12] = curColor;
-      Global.noteAssignedColors[note] = fifthColor;
+      byte curColor = Global.scaleNoteColors[note];
+      byte fifthColor = Global.scaleNoteColors[(note+6)%12];
+      Global.scaleNoteColors[(note+6)%12] = curColor;
+      Global.scaleNoteColors[note] = fifthColor;
     }
     updateDisplay();
   }
@@ -253,13 +253,13 @@ void scaleCellOnHold(byte sensorCol, byte sensorRow) {
       updateDisplay();
   }
   if (lightSettings == LIGHTS_MAIN) {
-      // In [GLOBAL SETTINGS]->[MAIN], a scale note was long-held.
-      // Mark this note as the tonic note, which means rotate the scale to start from this note.
+      // In [GLOBAL SETTINGS]->[MAIN], a note on the scale was long-held.
+      // Use this to set the mode of the scale, i.e., mark the start of the scale pattern.
       if (scaleContainsNote(activeScaleId, pressedNote) &&
-          scaleGetTonicNote(activeScaleId) != pressedNote) {
-        scaleSetTonicNote(activeScaleId, pressedNote);
+          scaleGetMode(activeScaleId) != pressedNote) {
+        scaleSetMode(activeScaleId, pressedNote);
       } else {
-        scaleSetTonicNote(activeScaleId, -1);
+        scaleSetMode(activeScaleId, -1);
       }
       updateDisplay();
   }

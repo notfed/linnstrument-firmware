@@ -540,7 +540,7 @@ void paintNormalDisplayCell(byte split, byte col, byte row) {
       cellDisplay = cellOn;
     } else if (isMainNote) {
       // use global per-note color
-      colour = Global.noteAssignedColors[octaveNote];
+      colour = Global.scaleNoteColors[octaveNote];
       cellDisplay = cellOn;
     }
   }
@@ -1507,7 +1507,7 @@ void displayNoteAssignedColors() {
   for (byte row = 0; row <= 3; ++row) {
     for (byte col = 2; col <= 4; ++col) {
       byte note = (col - 2) + (row * 3);
-      byte color = Global.noteAssignedColors[note];
+      byte color = Global.scaleNoteColors[note];
       setLed(col, row, color, cellOn);
     }
   }

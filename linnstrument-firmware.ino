@@ -754,10 +754,10 @@ struct GlobalSettings {
   byte currentPerSplit;                      // controls which split's settings are being displayed
   byte activeNotes;                          // controls which collection of note lights presets is active
   int mainNotes[12];                         // bitmask array that determines which notes receive "main" lights
-  byte scaleTonicNote[12];                   // Assigns a "tonic note" to each scale. This is 1-indexed (0 means unassigned). The scale will be rotated to start from this note rather than C.
-  byte scaleColorOffset;                     // Assigns a "color offset" to the scale colors. This is 1-indexed (0 means unassigned). The colors will be rotated such that the C note will be this color. 
   int accentNotes[12];                       // bitmask array that determines which notes receive accent lights (octaves, white keys, black keys, etc.)
-  byte noteAssignedColors[12];               // Assign a color to each note
+  byte scaleMode[12];                        // Assigns a "mode" to each scale. This results in an effective rotation of the scale. This is 1-indexed (0 means unassigned).
+  byte scaleNoteColors[12];                  // Assign a color to each note
+  byte scaleColorOffset;                     // An index into scaleNoteColors marking the "first" color (denoting the root note). This is 1-indexed (0 means unassigned).
   byte rowOffset;                            // interval between rows. 0 = no overlap, 1-12 = interval, 13 = guitar
   signed char customRowOffset;               // the custom row offset that can be configured at the location of the octave setting
   byte guitarTuning[MAXROWS];                // the notes used for each row for the guitar tuning, 0-127
