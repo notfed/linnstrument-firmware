@@ -52,7 +52,24 @@ void scaleSetMode(byte scaleId, byte mode) {
   }
 }
 
-byte scaleGetNoteColor(byte note) {
+static int rotateRight12(int x, int n) {
+    n %= 12; 
+    x = (x >> n) | (x << (12 - n));
+    x &= 0xFFF;
+    return x;
+}
+// x= 0b00000101, n=3
+
+int scaleGetEffectiveScale() {
+  int activeScaleId = Global.activeNotes;
+  byte mode = scaleGetMode(activeScaleId);
+  if (mode > 11) {
+    mode = 0;
+  }
+  return rotateRight12(Global.mainNotes[activeScaleId], mode);
+}
+
+byte scaleGetEffectiveNoteColor(byte note) {
   if (note > 11) {
     return COLOR_OFF;
   }
@@ -111,13 +128,13 @@ void scaleRedrawAccent() {
 // [GLOBAL SETTINGS]->MAIN :: Draw all notes (of the current scale)
 void scaleRedrawMain() {
   byte scaleId = Global.activeNotes;
-  byte tonic = scaleGetMode(scaleId);
+  byte mode = scaleGetMode(scaleId);
 
   for (byte row = 0; row <= 3; ++row) {
     for (byte col = 2; col <= 4; ++col) {
       byte note = noteAtCell(col, row);
       if (scaleContainsNote(scaleId, note)) {
-        if (note == tonic) {
+        if (note == mode) {
           setLed(col, row, globalAltColor, cellOn);
         } else {
           setLed(col, row, globalColor, cellOn);
@@ -202,11 +219,11 @@ void scaleCellOnTouchEnd(byte sensorCol, byte sensorRow) {
     if (!customLedPatternActive) {
       // Toggle this note in the scale.
       scaleToggleNote(activeScaleId, pressedNote);
-      // Clear the tonic note if it's not in the scale
-      byte activeScaleTonic = scaleGetMode(activeScaleId);
-      if (!scaleContainsNote(activeScaleId, activeScaleTonic)) {
-        scaleSetMode(activeScaleId, -1);
-      }
+      // TODO: Clear the mode note if it's not in the scale
+      // byte mode = scaleGetMode(activeScaleId);
+      // if (!scaleContainsNote(activeScaleId, mode)) {
+      //   scaleSetMode(activeScaleId, -1);
+      // }
     }
   }
 }
@@ -251,9 +268,18 @@ void scaleCellOnHold(byte sensorCol, byte sensorRow) {
   if (lightSettings == LIGHTS_MAIN) {
       // In [GLOBAL SETTINGS]->[MAIN], a note on the scale was long-held.
       // Use this to set the mode of the scale, i.e., mark the start of the scale pattern.
+
+      // TODO: Fix edge cases
+      // if (scaleContainsNote(activeScaleId, pressedNote) &&
+      //     scaleGetMode(activeScaleId) != pressedNote) {
+      //   scaleSetMode(activeScaleId, pressedNote);
+      // } else {
+      //   scaleSetMode(activeScaleId, -1);
+      // }
+
       if (scaleContainsNote(activeScaleId, pressedNote) &&
           scaleGetMode(activeScaleId) != pressedNote) {
-        scaleSetMode(activeScaleId, pressedNote);
+        scaleSetMode(activeScaleId, pressedNote);      
       } else {
         scaleSetMode(activeScaleId, -1);
       }

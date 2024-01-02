@@ -2528,7 +2528,7 @@ int StepSequencerState::getRowNoteNum(byte noteRow) {
     case sequencerScales: {
       int row = -1;
       for (byte i = 0; i < 128; ++i) {
-        if (((Global.mainNotes[Global.activeNotes] >> (i % 12)) & 1) ||
+        if (((scaleGetEffectiveScale() >> (i % 12)) & 1) ||
             ((Global.accentNotes[Global.activeNotes] >> (i % 12)) & 1)) {
           row += 1;
         }

@@ -954,9 +954,11 @@ void receivedNrpn(int parameter, int value, int channel) {
     case 209: case 210: case 211: case 212: case 213: case 214:
       if (inRange(value, 0, 1)) {
         if (value) {
+          // TODO: jaysullivan
           Global.mainNotes[Global.activeNotes] |= (1 << (parameter-203));
         }
         else {
+          // TODO: jaysullivan
           Global.mainNotes[Global.activeNotes] &= ~(1 << (parameter-203));
         }
       }
@@ -1468,7 +1470,7 @@ void sendNrpnParameter(int parameter, int channel) {
       break;
     case 203: case 204: case 205: case 206: case 207: case 208:
     case 209: case 210: case 211: case 212: case 213: case 214:
-      value = (Global.mainNotes[Global.activeNotes] & (1 << (param-203))) != 0;
+      value = (scaleGetEffectiveScale() & (1 << (param-203))) != 0;
       break;
     case 215: case 216: case 217: case 218: case 219: case 220:
     case 221: case 222: case 223: case 224: case 225: case 226:

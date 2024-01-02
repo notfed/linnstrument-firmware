@@ -522,7 +522,7 @@ void paintNormalDisplayCell(byte split, byte col, byte row) {
   else if (!customLedPatternActive) {
     byte octaveNote = abs(displayedNote % 12);
 
-    boolean isMainNote = Global.mainNotes[Global.activeNotes] & (1 << octaveNote);
+    boolean isMainNote = scaleGetEffectiveScale() & (1 << octaveNote);
     boolean isAccentNote = Global.accentNotes[Global.activeNotes] & (1 << octaveNote);
     boolean splitDefinesMainColor =
         Split[split].colorMain != COLOR_OFF && Split[split].colorMain != COLOR_BLACK;
@@ -541,7 +541,7 @@ void paintNormalDisplayCell(byte split, byte col, byte row) {
       cellDisplay = cellOn;
     } else if (isMainNote) {
       // use global per-note color
-      colour = scaleGetNoteColor(octaveNote);
+      colour = scaleGetEffectiveNoteColor(octaveNote);
       cellDisplay = cellOn;
     }
   }
