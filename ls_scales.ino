@@ -52,15 +52,11 @@ void scaleSetMode(byte scaleId, byte mode) {
   }
 }
 
-void scaleSetNoteColor(byte note, byte color) {
-  Global.scaleNoteColors[note] = color;
-}
-
 byte scaleGetNoteColor(byte note) {
   if (note > 11) {
     return COLOR_OFF;
   }
-  return Global.scaleNoteColors[note];
+  return Global.scaleNoteColors[(note + Global.scaleColorOffset) % 12];
 }
 
 void scaleRedraw() {
@@ -164,7 +160,7 @@ void scaleCellOnTouchStartHold(byte sensorCol, byte sensorRow) {
     }
   } else if (lightSettings == LIGHTS_ACCENT) {
     if (scaleContainsNote(activeScaleId, note)) {
-      byte currentColor = scaleGetNoteColor(note);
+      byte currentColor = Global.scaleNoteColors[note];
       setLed(sensorCol, sensorRow, currentColor, cellSlowPulse);
     }
   } else if (lightSettings == LIGHTS_ACTIVE) {
@@ -194,10 +190,10 @@ void scaleCellOnTouchEnd(byte sensorCol, byte sensorRow) {
   else if (lightSettings == LIGHTS_ACCENT &&
       ensureCellBeforeHoldWait(COLOR_BLACK, cellOn)) {
     if (!customLedPatternActive) { // TODO: Lift these checks to function start
-      if (scaleGetNoteColor(pressedNote) != accentColor) {
-        scaleSetNoteColor(pressedNote, accentColor);
+      if (Global.scaleNoteColors[pressedNote] != accentColor) {
+        Global.scaleNoteColors[pressedNote] = accentColor;
       } else {
-        scaleSetNoteColor(pressedNote, COLOR_BLACK);
+        Global.scaleNoteColors[pressedNote] = COLOR_BLACK;
       }
     }
   }

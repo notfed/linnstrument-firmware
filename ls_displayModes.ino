@@ -532,6 +532,7 @@ void paintNormalDisplayCell(byte split, byte col, byte row) {
     // paint all cells to assigned per-note colors, overriding with per-split colors if set
     if (splitDefinesAccentColor && isAccentNote) {
       // use per-split accent color
+      // TODO: We can't access this screen anymore...should we retain backwards compat?
       colour = Split[split].colorAccent;
       cellDisplay = cellOn;
     } else if (splitDefinesMainColor && isMainNote) {
@@ -540,7 +541,7 @@ void paintNormalDisplayCell(byte split, byte col, byte row) {
       cellDisplay = cellOn;
     } else if (isMainNote) {
       // use global per-note color
-      colour = Global.scaleNoteColors[octaveNote];
+      colour = scaleGetNoteColor(octaveNote);
       cellDisplay = cellOn;
     }
   }
@@ -1486,41 +1487,6 @@ void paintTranspose(byte color, byte row, short transpose) {
     byte col_to = (transpose > 0) ? (midcol + transpose) : (midcol - 1);
     for (byte c = col_from; c <= col_to; ++c) {
       setLed(c, row, color, cellOn);
-    }
-  }
-}
-
-// TODO: Move
-void displayNoteLights(int notelights) {
-  for (byte row = 0; row < 4; ++row) {
-    for (byte col = 0; col < 3; ++col) {
-      byte light = col + (row * 3);
-      if (notelights & 1 << light) {
-        lightLed(2+col, row);
-      }
-    }
-  }
-}
-
-// TODO: Move
-void displayNoteAssignedColors() {
-  for (byte row = 0; row <= 3; ++row) {
-    for (byte col = 2; col <= 4; ++col) {
-      byte note = (col - 2) + (row * 3);
-      byte color = Global.scaleNoteColors[note];
-      setLed(col, row, color, cellOn);
-    }
-  }
-}
-
-// TODO: Move
-void displayActiveNotes() {
-  for (byte row = 0; row < 4; ++row) {
-    for (byte col = 0; col < 3; ++col) {
-      byte light = col + (row * 3);
-      if (light == Global.activeNotes) {
-        setLed(2 + col, row, globalColor, cellOn);
-      }
     }
   }
 }
