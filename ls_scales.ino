@@ -26,18 +26,14 @@ static byte scaleGetAssignedColorOffset() {
 }
 
 static void scaleSetAssignedColorOffset(byte offset) {
-  if (offset > 11) {
-    Global.scaleColorOffset = 0;
-  } else {
-    Global.scaleColorOffset = offset + 1;
-  }
+  Global.scaleColorOffset = offset + 1;
 }
 
 static byte scaleGetEffectiveColorOffset() {
-  if (Global.scaleColorOffset == -1) {
+  if (scaleGetAssignedColorOffset() > 11) {
     return 0;
   } else {
-    return Global.scaleColorOffset - 1;
+    return scaleGetAssignedColorOffset();
   }
 }
 
@@ -48,24 +44,21 @@ static byte scaleGetAssignedMode(byte scaleId) {
   return Global.scaleMode[scaleId] - 1;
 }
 
+static void scaleSetAssignedMode(byte scaleId, byte mode) {
+  if (scaleId > 11) {
+    return;
+  }
+  Global.scaleMode[scaleId] = mode + 1;
+}
+
 static byte scaleGetEffectiveMode(byte scaleId) {
   if (scaleId > 11) {
     return 0;
   }
-  byte mode = Global.scaleMode[scaleId] - 1;
-  if (mode > 11) {
+  if (scaleGetAssignedMode(scaleId) > 11) {
     return 0;
-  }
-  return Global.scaleMode[scaleId] - 1;
-}
-
-static void scaleSetAssignedMode(byte scaleId, byte mode) {
-  if (scaleId > 11) {
-    return;
-  } else if (mode > 11) {
-    Global.scaleMode[scaleId] = 0;
   } else {
-    Global.scaleMode[scaleId] = mode + 1;
+    return scaleGetAssignedMode(scaleId);
   }
 }
 
