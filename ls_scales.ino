@@ -79,7 +79,9 @@ byte scaleGetEffectiveNoteColor(byte note) {
   if (note > 11) {
     return COLOR_OFF;
   }
-  return Global.scaleNoteColors[(note + scaleGetEffectiveColorOffset()) % 12];
+  byte colorOffset = scaleGetEffectiveColorOffset();
+  byte transposePitch = Split[Global.currentPerSplit].transposePitch + 12;
+  return Global.scaleNoteColors[(note + colorOffset + transposePitch) % 12];
 }
 
 void scaleRedraw() {
