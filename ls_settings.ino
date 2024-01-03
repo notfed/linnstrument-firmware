@@ -2328,6 +2328,11 @@ void handleOctaveTransposeNewTouchSplit(byte side) {
       Split[side].transposeLights = sensorCol - 8;
     }
   }
+  else if (sensorRow == VOLUME_ROW) {
+    if (sensorCol >= 2 && sensorCol <= 13) {
+      scaleSetAssignedColorOffset((sensorCol + 12 - 8) % 12);
+    }
+  }
 }
 
 void handleOctaveTransposeRelease() {

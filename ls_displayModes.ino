@@ -391,22 +391,28 @@ void paintNormalDisplay() {
     paintNormalDisplaySplit(RIGHT, divider, NUMCOLS);
   }
 
-  // light the octave/transpose switch if the pitch is transposed
-  if ((Split[LEFT].transposePitch < 0 && Split[RIGHT].transposePitch < 0) ||
-      (Split[LEFT].transposePitch < 0 && Split[RIGHT].transposePitch == 0) ||
-      (Split[LEFT].transposePitch == 0 && Split[RIGHT].transposePitch < 0)) {
-    setLed(0, OCTAVE_ROW, COLOR_RED, cellOn);
-  }
-  else if ((Split[LEFT].transposePitch > 0 && Split[RIGHT].transposePitch > 0) ||
-           (Split[LEFT].transposePitch > 0 && Split[RIGHT].transposePitch == 0) ||
-           (Split[LEFT].transposePitch == 0 && Split[RIGHT].transposePitch > 0)) {
-    setLed(0, OCTAVE_ROW, COLOR_GREEN, cellOn);
-  }
-  else if (Split[LEFT].transposePitch != 0 && Split[RIGHT].transposePitch != 0) {
-    setLed(0, OCTAVE_ROW, COLOR_YELLOW, cellOn);
-  }
-  else {
-    clearLed(0, OCTAVE_ROW);
+  if (Global.splitActive) {
+    // light the octave/transpose switch if the pitch is transposed
+    if ((Split[LEFT].transposePitch < 0 && Split[RIGHT].transposePitch < 0) ||
+        (Split[LEFT].transposePitch < 0 && Split[RIGHT].transposePitch == 0) ||
+        (Split[LEFT].transposePitch == 0 && Split[RIGHT].transposePitch < 0)) {
+      setLed(0, OCTAVE_ROW, COLOR_RED, cellOn);
+    }
+    else if ((Split[LEFT].transposePitch > 0 && Split[RIGHT].transposePitch > 0) ||
+            (Split[LEFT].transposePitch > 0 && Split[RIGHT].transposePitch == 0) ||
+            (Split[LEFT].transposePitch == 0 && Split[RIGHT].transposePitch > 0)) {
+      setLed(0, OCTAVE_ROW, COLOR_GREEN, cellOn);
+    }
+    else if (Split[LEFT].transposePitch != 0 && Split[RIGHT].transposePitch != 0) {
+      setLed(0, OCTAVE_ROW, COLOR_YELLOW, cellOn);
+    }
+    else {
+      clearLed(0, OCTAVE_ROW);
+    }
+  } else {
+    if (scaleGetAssignedColorOffset() >= 1 && scaleGetAssignedColorOffset() <= 11) {
+      setLed(0, OCTAVE_ROW, scaleGetEffectiveNoteColor(0), cellOn);
+    }
   }
 }
 
@@ -1435,12 +1441,26 @@ void paintOctaveTransposeDisplay(byte side) {
     }
   }
 
+  // Paint the color offset values
+  short colorOffsetTranspose = ((scaleGetEffectiveColorOffset() + 6) % 12) - 6;
+  if (!doublePerSplit || Split[LEFT].transposeLights == colorOffsetTranspose) {
+    paintTranspose(getPrimaryColor(Global.currentPerSplit), VOLUME_ROW, colorOffsetTranspose);
+    byte rootColor = scaleGetEffectiveNoteColor(0);
+    setLed(8, VOLUME_ROW, rootColor, cellOn);
+  }
+  else if (doublePerSplit) {
+    paintTranspose(getPrimaryColor(RIGHT), VOLUME_ROW, colorOffsetTranspose);
+    paintTranspose(getPrimaryColor(LEFT), VOLUME_ROW, colorOffsetTranspose);
+  }
+
   paintShowSplitSelection(side);
 }
 
 void paintOctave(byte color, byte midcol, byte row, short octave) {
   setLed(midcol, row, getSecondaryColor(Global.currentPerSplit), cellOn);
-  if (0 == color) color = octave > 0 ? COLOR_GREEN : COLOR_RED ;
+  if (0 == color) { 
+    if (0 == color) color = octave > 0 ? COLOR_GREEN : COLOR_RED ;
+  }
 
   switch (octave) {
     case -60:
