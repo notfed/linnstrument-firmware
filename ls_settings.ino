@@ -1158,11 +1158,42 @@ void setSplitMpeMode(byte split, boolean enabled) {
   }
 }
 
-// Return the next color in the color cycle (1 through COLOR_LAST)
+// Supported colors, in the order used for color cycling
+const byte orderedColors[] = {
+  COLOR_OFF,
+  COLOR_BLACK,
+  COLOR_WHITE,         // RGB
+  COLOR_RED,           // R__
+  COLOR_ORANGE,        // {RED, YELLOW}
+  COLOR_YELLOW,        // RG_
+  COLOR_LIME,          // {YELLOW, GREEN}
+  COLOR_GREEN,         // _G_
+  COLOR_SPRING_GREEN,  // {GREEN, CYAN}
+  COLOR_CYAN,          // _GB
+  COLOR_AZURE,         // {CYAN, BLUE}
+  COLOR_BLUE,          // __B
+  COLOR_VIOLET,        // {BLUE, MAGENTA}
+  COLOR_MAGENTA,       // R_B
+  COLOR_ROSE,          // {MAGENTA, RED}
+  COLOR_PINK,          // {YELLOW, MAGENTA}
+};
+
+// A map from each color to its next color (according to orderedColors)
+byte nextColor[COLOR_LAST + 1] = { -1 };
+
+inline void initNextColor() {
+  if (nextColor[0] > COLOR_LAST) {
+    for (unsigned int i = 0; i < sizeof(orderedColors); i++) {
+      nextColor[orderedColors[i]] = orderedColors[(i + 1) % sizeof(orderedColors)];
+    }
+  }
+}
+
+// Return the next eligible color in the color cycle
 byte colorCycle(byte color, boolean includeOff) {
+  initNextColor();
   do {
-    color += 1;
-    color %= COLOR_LAST + 1;
+    color = nextColor[color];
   } while ((color == COLOR_OFF && !includeOff) || color == COLOR_BLACK);
   return color;
 }

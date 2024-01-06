@@ -86,25 +86,24 @@ byte NUMROWS = 8;                    // number of touch sensor rows
 #define READ_Z  2
 
 // Supported colors
-#define COLOR_OFF          0
+#define COLOR_OFF      0
+#define COLOR_RED      1
+#define COLOR_YELLOW   2
+#define COLOR_GREEN    3
+#define COLOR_CYAN     4
+#define COLOR_BLUE     5
+#define COLOR_MAGENTA  6
+#define COLOR_BLACK    7
+#define COLOR_WHITE    8
+#define COLOR_ORANGE   9
+#define COLOR_LIME     10
+#define COLOR_PINK     11
+#define COLOR_SPRING_GREEN 12
+#define COLOR_AZURE        13
+#define COLOR_VIOLET       14
+#define COLOR_ROSE         15
 
-#define COLOR_BLACK        1
-#define COLOR_WHITE        2  // RGB
-#define COLOR_RED          3  // R__
-#define COLOR_ORANGE       4  // {RED, YELLOW}
-#define COLOR_YELLOW       5  // RG_
-#define COLOR_LIME         6  // {YELLOW, GREEN}
-#define COLOR_GREEN        7  // _G_
-#define COLOR_SPRING_GREEN 8  // {GREEN, CYAN}
-#define COLOR_CYAN         9  // _GB
-#define COLOR_AZURE        10 // {CYAN, BLUE}
-#define COLOR_BLUE         11 // __B
-#define COLOR_VIOLET       12 // {BLUE, MAGENTA}
-#define COLOR_MAGENTA      13 // R_B
-#define COLOR_ROSE         14 // {MAGENTA, RED}
-#define COLOR_PINK         15 // {YELLOW, MAGENTA}
-
-#define COLOR_LAST         15
+#define COLOR_LAST         COLOR_ROSE
 
 // Special row offset values, for legacy reasons
 #define ROWOFFSET_NOOVERLAP        0x00
