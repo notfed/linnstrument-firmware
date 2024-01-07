@@ -671,7 +671,11 @@ void handleNonPlayingTouch() {
       handleSensorRangeZNewTouch();
       break;
     case displayOctaveTranspose:
-      handleOctaveTransposeNewTouch();
+        if (isTranspose2Enabled()) {
+          transpose2HandleOctaveTransposeNewTouch();
+        } else {
+          handleOctaveTransposeNewTouch();
+        }
       break;
     case displayGlobal:
     case displayGlobalWithTempo:
@@ -1610,7 +1614,11 @@ boolean handleNonPlayingRelease() {
         handleVolumeRelease();
         break;
       case displayOctaveTranspose:
-        handleOctaveTransposeRelease();
+        if (isTranspose2Enabled()) {
+          transpose2HandleOctaveTransposeRelease();
+        } else {
+          handleOctaveTransposeRelease();
+        }
         break;
       case displayGlobal:
       case displayGlobalWithTempo:

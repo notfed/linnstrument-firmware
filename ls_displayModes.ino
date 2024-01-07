@@ -67,6 +67,7 @@ These routines handle the painting of these display modes on LinnStument's 208 L
 
 unsigned long displayModeStart = 0;   // indicates when the current display mode was activated
 boolean blinkMiddleRootNote = false;  // indicates whether the middle root note should be blinking
+boolean blinkAllRootNotes = false;  // indicates whether all root notes should be blinking
 
 // changes the active display mode
 void setDisplayMode(DisplayMode mode) {
@@ -120,7 +121,11 @@ void updateDisplay() {
       paintVolumeDisplay(Global.currentPerSplit);
       break;
     case displayOctaveTranspose:
-      paintOctaveTransposeDisplay(Global.currentPerSplit);
+        if (isTranspose2Enabled()) {
+          transpose2PaintOctaveTransposeDisplay();
+        } else {
+          paintOctaveTransposeDisplay(Global.currentPerSplit);
+        }
       break;
     case displayGlobal:
     case displayGlobalWithTempo:
@@ -523,7 +528,8 @@ void paintNormalDisplayCell(byte split, byte col, byte row) {
     } else if (isMainNote) {
       // use global per-note color
       colour = scaleGetEffectiveNoteColor(octaveNote);
-      cellDisplay = cellOn;
+      boolean isRootNote = (actualnote % 12) == 0; // TODO: Hardcoded to C for now?
+      cellDisplay = blinkAllRootNotes && isRootNote ? cellFastPulse : cellOn;
     }
   }
 
