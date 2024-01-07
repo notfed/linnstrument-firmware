@@ -390,7 +390,6 @@ void paintNormalDisplay() {
       clearLed(0, OCTAVE_ROW);
     }
   } else {
-    int activeScaleId = Global.activeNotes;
     if (scaleGetAssignedColorOffset() >= 1 &&
         scaleGetAssignedColorOffset() <= 11) {
       setLed(0, OCTAVE_ROW, scaleGetEffectiveNoteColor(0), cellOn);
