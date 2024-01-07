@@ -4,3 +4,5 @@
 build/*
 linnstrument-firmware.sublime-*
 stino.settings
+.theia/**
+.vscode/**
