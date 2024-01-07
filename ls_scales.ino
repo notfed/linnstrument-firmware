@@ -21,15 +21,27 @@ static boolean scaleContainsNote(byte scaleId, byte note) {
   return *scale & 1 << note;
 }
 
-static byte scaleGetAssignedColorOffset(byte paletteId) {
+inline byte scaleGetAssignedColorOffset() {
+  return scaleGetAssignedColorOffset(Global.activePalette);
+}
+
+byte scaleGetAssignedColorOffset(byte paletteId) {
   return Global.paletteColorOffset[paletteId] - 1;
 }
 
-static void scaleSetAssignedColorOffset(byte paletteId, byte offset) {
-  Global.paletteColorOffset[paletteId] = offset + 1;
+inline void scaleSetAssignedColorOffset(byte colorOffset) {
+  scaleSetAssignedColorOffset(Global.activePalette, colorOffset);
 }
 
-static byte scaleGetEffectiveColorOffset(byte paletteId) {
+void scaleSetAssignedColorOffset(byte paletteId, byte colorOffset) {
+  Global.paletteColorOffset[paletteId] = colorOffset + 1;
+}
+
+inline byte scaleGetEffectiveColorOffset() {
+  return scaleGetEffectiveColorOffset(Global.activePalette);
+}
+
+byte scaleGetEffectiveColorOffset(byte paletteId) {
   if (scaleGetAssignedColorOffset(paletteId) > 11) {
     return 0;
   } else {
@@ -69,18 +81,25 @@ static int rotateRight12(int x, int n) {
     return x;
 }
 
-int scaleGetEffectiveScale() {
-  int activeScaleId = Global.activeNotes;
-  byte mode = scaleGetEffectiveMode(activeScaleId);
-  return rotateRight12(Global.mainNotes[activeScaleId], mode);
+inline int scaleGetEffectiveScale() {
+  return scaleGetEffectiveScale(Global.activeNotes);
 }
 
-byte scaleGetEffectiveNoteColor(int scaleId, byte note) {
+int scaleGetEffectiveScale(byte scaleId) {
+  byte mode = scaleGetEffectiveMode(scaleId);
+  return rotateRight12(Global.mainNotes[scaleId], mode);
+}
+
+inline byte scaleGetEffectiveNoteColor(byte note) {
+  return scaleGetEffectiveNoteColor(Global.activePalette, note);
+}
+
+byte scaleGetEffectiveNoteColor(byte paletteId, byte note) {
   if (note > 11) {
     return COLOR_OFF;
   }
-  byte colorOffset = scaleGetEffectiveColorOffset(Global.activePalette);
-  return Global.paletteColors[Global.activePalette][(note + colorOffset) % 12];
+  byte colorOffset = scaleGetEffectiveColorOffset(paletteId);
+  return Global.paletteColors[paletteId][(note + colorOffset) % 12];
 }
 
 void scaleRedraw() {

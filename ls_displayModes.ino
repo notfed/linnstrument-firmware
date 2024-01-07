@@ -391,9 +391,9 @@ void paintNormalDisplay() {
     }
   } else {
     int activeScaleId = Global.activeNotes;
-    if (scaleGetAssignedColorOffset(Global.activePalette) >= 1 &&
-        scaleGetAssignedColorOffset(Global.activePalette) <= 11) {
-      setLed(0, OCTAVE_ROW, scaleGetEffectiveNoteColor(Global.activePalette, 0), cellOn);
+    if (scaleGetAssignedColorOffset() >= 1 &&
+        scaleGetAssignedColorOffset() <= 11) {
+      setLed(0, OCTAVE_ROW, scaleGetEffectiveNoteColor(0), cellOn);
     }
   }
 }
@@ -523,8 +523,7 @@ void paintNormalDisplayCell(byte split, byte col, byte row) {
       cellDisplay = cellOn;
     } else if (isMainNote) {
       // use global per-note color
-      int activeScaleId = Global.activeNotes;
-      colour = scaleGetEffectiveNoteColor(activeScaleId, octaveNote);
+      colour = scaleGetEffectiveNoteColor(octaveNote);
       cellDisplay = cellOn;
     }
   }
@@ -1384,11 +1383,10 @@ void paintOctaveTransposeDisplay(byte side) {
   }
 
   // Paint the color offset values
-  int activePaletteId = Global.activePalette;
-  short colorOffsetTranspose = ((scaleGetEffectiveColorOffset(activePaletteId) + 6) % 12) - 6;
+  short colorOffsetTranspose = ((scaleGetEffectiveColorOffset() + 6) % 12) - 6;
   if (!doublePerSplit || Split[LEFT].transposeLights == colorOffsetTranspose) {
     paintTranspose(getPrimaryColor(Global.currentPerSplit), VOLUME_ROW, colorOffsetTranspose);
-    byte rootColor = scaleGetEffectiveNoteColor(activePaletteId, 0);
+    byte rootColor = scaleGetEffectiveNoteColor(0);
     setLed(8, VOLUME_ROW, rootColor, cellOn);
   } else if (doublePerSplit) {
     paintTranspose(getPrimaryColor(RIGHT), VOLUME_ROW, colorOffsetTranspose);
