@@ -21,19 +21,19 @@ static boolean scaleContainsNote(byte scaleId, byte note) {
   return *scale & 1 << note;
 }
 
-static byte scaleGetAssignedColorOffset() {
-  return Global.scaleColorOffset - 1;
+static byte scaleGetAssignedColorOffset(byte paletteId) {
+  return Global.paletteColorOffset[paletteId] - 1;
 }
 
-static void scaleSetAssignedColorOffset(byte offset) {
-  Global.scaleColorOffset = offset + 1;
+static void scaleSetAssignedColorOffset(byte paletteId, byte offset) {
+  Global.paletteColorOffset[paletteId] = offset + 1;
 }
 
-static byte scaleGetEffectiveColorOffset() {
-  if (scaleGetAssignedColorOffset() > 11) {
+static byte scaleGetEffectiveColorOffset(byte paletteId) {
+  if (scaleGetAssignedColorOffset(paletteId) > 11) {
     return 0;
   } else {
-    return scaleGetAssignedColorOffset();
+    return scaleGetAssignedColorOffset(paletteId);
   }
 }
 
@@ -75,12 +75,12 @@ int scaleGetEffectiveScale() {
   return rotateRight12(Global.mainNotes[activeScaleId], mode);
 }
 
-byte scaleGetEffectiveNoteColor(byte note) {
+byte scaleGetEffectiveNoteColor(int scaleId, byte note) {
   if (note > 11) {
     return COLOR_OFF;
   }
-  byte colorOffset = scaleGetEffectiveColorOffset();
-  return Global.scaleNoteColors[(note + colorOffset) % 12];
+  byte colorOffset = scaleGetEffectiveColorOffset(Global.activePalette);
+  return Global.paletteColors[Global.activePalette][(note + colorOffset) % 12];
 }
 
 void scaleRedraw() {
@@ -121,12 +121,11 @@ static void scaleRedrawScaleSel() {
 
 // [GLOBAL SETTINGS]->ACCENT :: Draw each note's configured color (of the current scale)
 static void scaleRedrawAccent() {
-  byte scaleId = Global.activeNotes;
   for (byte row = 0; row <= 3; ++row) {
     for (byte col = 2; col <= 4; ++col) {
       byte note = noteAtCell(col, row);
-      byte color = Global.scaleNoteColors[note];
-      boolean isColorOffset = scaleGetAssignedColorOffset() == note;
+      byte color = Global.paletteColors[Global.activePalette][note];
+      boolean isColorOffset = scaleGetAssignedColorOffset(Global.activePalette) == note;
       setLed(col, row, color, isColorOffset ? cellSlowPulse : cellOn);
     }
   }
@@ -184,7 +183,7 @@ void scaleCellOnTouchStartHold(byte sensorCol, byte sensorRow) {
     }
   } else if (lightSettings == LIGHTS_ACCENT) {
     if (scaleContainsNote(activeScaleId, note)) {
-      byte currentColor = Global.scaleNoteColors[note];
+      byte currentColor = Global.paletteColors[Global.activePalette][note];
       setLed(sensorCol, sensorRow, currentColor, cellSlowPulse);
     }
   } else if (lightSettings == LIGHTS_ACTIVE) {
@@ -193,8 +192,6 @@ void scaleCellOnTouchStartHold(byte sensorCol, byte sensorRow) {
 }
 
 void scaleCellOnTouchEnd(byte sensorCol, byte sensorRow) {
-  byte activeScaleId = Global.activeNotes;
-
   if (sensorCol == 1 && sensorRow == LIGHTS_ACCENT && lightSettings == LIGHTS_ACCENT) {
       accentColor = colorCycle(accentColor, false);
       setLed(1, 1, accentColor, cellOn);
@@ -214,10 +211,10 @@ void scaleCellOnTouchEnd(byte sensorCol, byte sensorRow) {
   else if (lightSettings == LIGHTS_ACCENT &&
       ensureCellBeforeHoldWait(COLOR_BLACK, cellOn)) {
     if (!customLedPatternActive) { // TODO: Lift these checks to function start
-      if (Global.scaleNoteColors[pressedNote] != accentColor) {
-        Global.scaleNoteColors[pressedNote] = accentColor;
+      if (Global.paletteColors[Global.activePalette][pressedNote] != accentColor) {
+        Global.paletteColors[Global.activePalette][pressedNote] = accentColor;
       } else {
-        Global.scaleNoteColors[pressedNote] = COLOR_BLACK;
+        Global.paletteColors[Global.activePalette][pressedNote] = COLOR_BLACK;
       }
     }
   }
@@ -225,7 +222,7 @@ void scaleCellOnTouchEnd(byte sensorCol, byte sensorRow) {
       ensureCellBeforeHoldWait(COLOR_BLACK, cellOn)) {
     if (!customLedPatternActive) {
       // Toggle this note in the scale.
-      scaleToggleNote(activeScaleId, pressedNote);
+      scaleToggleNote(Global.activeNotes, pressedNote);
       // TODO: Clear the mode note if it's not in the scale
       // byte mode = scaleGetAssignedMode(activeScaleId);
       // if (!scaleContainsNote(activeScaleId, mode)) {
@@ -249,10 +246,10 @@ void scaleCellOnHold(byte sensorCol, byte sensorRow) {
     // The [GLOBAL SETTINGS]->[ACCENT] button was long-held.
     // Permute the colors into fifths.
     for (byte note = 1; note <= 5; note+=2) {
-      byte curColor = Global.scaleNoteColors[note];
-      byte fifthColor = Global.scaleNoteColors[(note+6)%12];
-      Global.scaleNoteColors[(note+6)%12] = curColor;
-      Global.scaleNoteColors[note] = fifthColor;
+      byte curColor = Global.paletteColors[Global.activePalette][note];
+      byte fifthColor = Global.paletteColors[Global.activePalette][(note+6)%12];
+      Global.paletteColors[Global.activePalette][(note+6)%12] = curColor;
+      Global.paletteColors[Global.activePalette][note] = fifthColor;
     }
     updateDisplay();
   }
@@ -264,11 +261,11 @@ void scaleCellOnHold(byte sensorCol, byte sensorRow) {
   if (lightSettings == LIGHTS_ACCENT) {
       // In [GLOBAL SETTINGS]->[ACCENT], a scale note was long-held.
       // Mark this color as the color offset, which means rotate the colors to start from this color.
-      if (scaleGetAssignedColorOffset() != pressedNote) {
+      if (scaleGetAssignedColorOffset(Global.activePalette) != pressedNote) {
         // TODO: What if user sets a non-color as the root color? How to pulse?
-        scaleSetAssignedColorOffset(pressedNote);
+        scaleSetAssignedColorOffset(Global.activePalette, pressedNote);
       } else {
-        scaleSetAssignedColorOffset(-1);
+        scaleSetAssignedColorOffset(Global.activePalette, -1);
       }
       updateDisplay();
   }

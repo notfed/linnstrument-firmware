@@ -65,14 +65,15 @@ These routines handle the painting of these display modes on LinnStument's 208 L
 **************************************************************************************************/
 
 
-unsigned long displayModeStart = 0;    // indicates when the current display mode was activated
-boolean blinkMiddleRootNote = false;   // indicates whether the middle root note should be blinking
+unsigned long displayModeStart = 0;   // indicates when the current display mode was activated
+boolean blinkMiddleRootNote = false;  // indicates whether the middle root note should be blinking
 
 // changes the active display mode
 void setDisplayMode(DisplayMode mode) {
-  DEBUGPRINT((0,"setDisplayMode"));
-  DEBUGPRINT((0," mode="));DEBUGPRINT((0,(int)mode));
-  DEBUGPRINT((0,"\n"));
+  DEBUGPRINT((0, "setDisplayMode"));
+  DEBUGPRINT((0, " mode="));
+  DEBUGPRINT((0, (int)mode));
+  DEBUGPRINT((0, "\n"));
 
   boolean refresh = (displayMode != mode);
   if (refresh || displayModeStart == 0) {
@@ -299,17 +300,11 @@ void updateSwitchLeds() {
   CellDisplay displaySwitch1 = switchState[SWITCH_SWITCH_1][Global.currentPerSplit] ? cellOn : cellOff;
   if (Global.switchAssignment[SWITCH_SWITCH_1] == ASSIGNED_ARPEGGIATOR) {
     displaySwitch1 = isArpeggiatorEnabled(Global.currentPerSplit) ? cellOn : cellOff;
-  }
-  else if (isLowRowSustainPressed(Global.currentPerSplit) &&
-           ((Global.switchAssignment[SWITCH_SWITCH_1] == ASSIGNED_SUSTAIN && Global.ccForSwitchSustain[SWITCH_SWITCH_1] == 64) ||
-            (Global.switchAssignment[SWITCH_SWITCH_1] == ASSIGNED_CC_65 && Global.ccForSwitchCC65[SWITCH_SWITCH_1] == 64))) {
+  } else if (isLowRowSustainPressed(Global.currentPerSplit) && ((Global.switchAssignment[SWITCH_SWITCH_1] == ASSIGNED_SUSTAIN && Global.ccForSwitchSustain[SWITCH_SWITCH_1] == 64) || (Global.switchAssignment[SWITCH_SWITCH_1] == ASSIGNED_CC_65 && Global.ccForSwitchCC65[SWITCH_SWITCH_1] == 64))) {
     displaySwitch1 = cellOn;
-  }
-  else if ((Global.switchAssignment[SWITCH_SWITCH_1] == ASSIGNED_SUSTAIN && isSwitchSustainCCEnabled(SWITCH_SWITCH_1, Global.currentPerSplit)) ||
-           (Global.switchAssignment[SWITCH_SWITCH_1] == ASSIGNED_CC_65 && isSwitchCC65CCEnabled(SWITCH_SWITCH_1, Global.currentPerSplit))) {
+  } else if ((Global.switchAssignment[SWITCH_SWITCH_1] == ASSIGNED_SUSTAIN && isSwitchSustainCCEnabled(SWITCH_SWITCH_1, Global.currentPerSplit)) || (Global.switchAssignment[SWITCH_SWITCH_1] == ASSIGNED_CC_65 && isSwitchCC65CCEnabled(SWITCH_SWITCH_1, Global.currentPerSplit))) {
     displaySwitch1 = cellOn;
-  }
-  else if (Global.switchAssignment[SWITCH_SWITCH_1] == ASSIGNED_AUTO_OCTAVE && isSwitchAutoOctavePressed(Global.currentPerSplit)) {
+  } else if (Global.switchAssignment[SWITCH_SWITCH_1] == ASSIGNED_AUTO_OCTAVE && isSwitchAutoOctavePressed(Global.currentPerSplit)) {
     displaySwitch1 = cellOn;
   }
   setLed(0, SWITCH_1_ROW, globalColor, displaySwitch1);
@@ -317,28 +312,20 @@ void updateSwitchLeds() {
   CellDisplay displaySwitch2 = switchState[SWITCH_SWITCH_2][Global.currentPerSplit] ? cellOn : cellOff;
   if (Global.switchAssignment[SWITCH_SWITCH_2] == ASSIGNED_ARPEGGIATOR) {
     displaySwitch2 = isArpeggiatorEnabled(Global.currentPerSplit) ? cellOn : cellOff;
-  }
-  else if (isLowRowSustainPressed(Global.currentPerSplit) &&
-           ((Global.switchAssignment[SWITCH_SWITCH_2] == ASSIGNED_SUSTAIN && Global.ccForSwitchSustain[SWITCH_SWITCH_2] == 64) ||
-            (Global.switchAssignment[SWITCH_SWITCH_2] == ASSIGNED_CC_65 && Global.ccForSwitchCC65[SWITCH_SWITCH_2] == 64))) {
+  } else if (isLowRowSustainPressed(Global.currentPerSplit) && ((Global.switchAssignment[SWITCH_SWITCH_2] == ASSIGNED_SUSTAIN && Global.ccForSwitchSustain[SWITCH_SWITCH_2] == 64) || (Global.switchAssignment[SWITCH_SWITCH_2] == ASSIGNED_CC_65 && Global.ccForSwitchCC65[SWITCH_SWITCH_2] == 64))) {
     displaySwitch2 = cellOn;
-  }
-  else if ((Global.switchAssignment[SWITCH_SWITCH_2] == ASSIGNED_SUSTAIN && isSwitchSustainCCEnabled(SWITCH_SWITCH_2, Global.currentPerSplit)) ||
-           (Global.switchAssignment[SWITCH_SWITCH_2] == ASSIGNED_CC_65 && isSwitchCC65CCEnabled(SWITCH_SWITCH_2, Global.currentPerSplit))) {
+  } else if ((Global.switchAssignment[SWITCH_SWITCH_2] == ASSIGNED_SUSTAIN && isSwitchSustainCCEnabled(SWITCH_SWITCH_2, Global.currentPerSplit)) || (Global.switchAssignment[SWITCH_SWITCH_2] == ASSIGNED_CC_65 && isSwitchCC65CCEnabled(SWITCH_SWITCH_2, Global.currentPerSplit))) {
     displaySwitch2 = cellOn;
-  }
-  else if (Global.switchAssignment[SWITCH_SWITCH_2] == ASSIGNED_AUTO_OCTAVE && isSwitchAutoOctavePressed(Global.currentPerSplit)) {
+  } else if (Global.switchAssignment[SWITCH_SWITCH_2] == ASSIGNED_AUTO_OCTAVE && isSwitchAutoOctavePressed(Global.currentPerSplit)) {
     displaySwitch2 = cellOn;
   }
   setLed(0, SWITCH_2_ROW, globalColor, displaySwitch2);
 
   if (Split[Global.currentPerSplit].sequencer) {
     setLed(0, SPLIT_ROW, getPrimaryColor(Global.currentPerSplit), cellOn);
-  }
-  else if (Global.splitActive) {
+  } else if (Global.splitActive) {
     setLed(0, SPLIT_ROW, getPrimaryColor(Global.currentPerSplit), cellOn);
-  }
-  else {
+  } else {
     clearLed(0, SPLIT_ROW);
   }
 
@@ -393,25 +380,20 @@ void paintNormalDisplay() {
 
   if (Global.splitActive) {
     // light the octave/transpose switch if the pitch is transposed
-    if ((Split[LEFT].transposePitch < 0 && Split[RIGHT].transposePitch < 0) ||
-        (Split[LEFT].transposePitch < 0 && Split[RIGHT].transposePitch == 0) ||
-        (Split[LEFT].transposePitch == 0 && Split[RIGHT].transposePitch < 0)) {
+    if ((Split[LEFT].transposePitch < 0 && Split[RIGHT].transposePitch < 0) || (Split[LEFT].transposePitch < 0 && Split[RIGHT].transposePitch == 0) || (Split[LEFT].transposePitch == 0 && Split[RIGHT].transposePitch < 0)) {
       setLed(0, OCTAVE_ROW, COLOR_RED, cellOn);
-    }
-    else if ((Split[LEFT].transposePitch > 0 && Split[RIGHT].transposePitch > 0) ||
-            (Split[LEFT].transposePitch > 0 && Split[RIGHT].transposePitch == 0) ||
-            (Split[LEFT].transposePitch == 0 && Split[RIGHT].transposePitch > 0)) {
+    } else if ((Split[LEFT].transposePitch > 0 && Split[RIGHT].transposePitch > 0) || (Split[LEFT].transposePitch > 0 && Split[RIGHT].transposePitch == 0) || (Split[LEFT].transposePitch == 0 && Split[RIGHT].transposePitch > 0)) {
       setLed(0, OCTAVE_ROW, COLOR_GREEN, cellOn);
-    }
-    else if (Split[LEFT].transposePitch != 0 && Split[RIGHT].transposePitch != 0) {
+    } else if (Split[LEFT].transposePitch != 0 && Split[RIGHT].transposePitch != 0) {
       setLed(0, OCTAVE_ROW, COLOR_YELLOW, cellOn);
-    }
-    else {
+    } else {
       clearLed(0, OCTAVE_ROW);
     }
   } else {
-    if (scaleGetAssignedColorOffset() >= 1 && scaleGetAssignedColorOffset() <= 11) {
-      setLed(0, OCTAVE_ROW, scaleGetEffectiveNoteColor(0), cellOn);
+    int activeScaleId = Global.activeNotes;
+    if (scaleGetAssignedColorOffset(Global.activePalette) >= 1 &&
+        scaleGetAssignedColorOffset(Global.activePalette) <= 11) {
+      setLed(0, OCTAVE_ROW, scaleGetEffectiveNoteColor(Global.activePalette, 0), cellOn);
     }
   }
 }
@@ -430,13 +412,11 @@ void paintNormalDisplaySplit(byte split, byte leftEdge, byte rightEdge) {
           clearLed(col, row, LED_LAYER_LOWROW);
         }
       }
-    }
-    else if (isStrummingSplit(split)) {
+    } else if (isStrummingSplit(split)) {
       for (byte col = leftEdge; col < rightEdge; ++col) {
         paintStrumDisplayCell(split, col, row);
       }
-    }
-    else {
+    } else {
       for (byte col = leftEdge; col < rightEdge; ++col) {
         paintNormalDisplayCell(split, col, row);
       }
@@ -468,22 +448,20 @@ void paintCCFaderDisplayRow(byte split, byte row, byte color, unsigned short ccF
 
   // when the fader only spans one cell, it acts as a toggle
   if (faderLength == 0) {
-      if (ccFaderValues[split][ccForFader] > 0) {
-        setLed(faderLeft, row, color, cellOn, layer);
-      }
-      else {
-        clearLed(faderLeft, row, layer);
-      }
+    if (ccFaderValues[split][ccForFader] > 0) {
+      setLed(faderLeft, row, color, cellOn, layer);
+    } else {
+      clearLed(faderLeft, row, layer);
+    }
   }
   // otherwise calculate the fader position based on its value and light the appropriate leds
   else {
     int32_t fxdFaderPosition = fxdCalculateFaderPosition(ccFaderValues[split][ccForFader], faderLeft, faderLength);
 
-    for (byte col = faderLength + faderLeft; col >= faderLeft; --col ) {
+    for (byte col = faderLength + faderLeft; col >= faderLeft; --col) {
       if (Device.calRows[col][0].fxdReferenceX - FXD_CALX_HALF_UNIT > fxdFaderPosition) {
         setLed(col, row, COLOR_BLACK, cellOn, layer);
-      }
-      else {
+      } else {
         setLed(col, row, color, cellOn, layer);
       }
     }
@@ -500,8 +478,7 @@ void paintStrumDisplayCell(byte split, byte col, byte row) {
   if (row % 2 == 0) {
     colour = getSecondaryColor(split);
     cellDisplay = cellOn;
-  }
-  else {
+  } else {
     colour = getPrimaryColor(split);
     cellDisplay = cellOn;
   }
@@ -524,16 +501,15 @@ void paintNormalDisplayCell(byte split, byte col, byte row) {
   if (actualnote < 0 || actualnote > 127) {
     colour = COLOR_OFF;
     cellDisplay = cellOff;
-  }
-  else if (!customLedPatternActive) {
+  } else if (!customLedPatternActive) {
     byte octaveNote = abs(displayedNote % 12);
 
     boolean isMainNote = scaleGetEffectiveScale() & (1 << octaveNote);
     boolean isAccentNote = Global.accentNotes[Global.activeNotes] & (1 << octaveNote);
     boolean splitDefinesMainColor =
-        Split[split].colorMain != COLOR_OFF && Split[split].colorMain != COLOR_BLACK;
+      Split[split].colorMain != COLOR_OFF && Split[split].colorMain != COLOR_BLACK;
     boolean splitDefinesAccentColor =
-        Split[split].colorAccent != COLOR_OFF && Split[split].colorAccent != COLOR_BLACK;
+      Split[split].colorAccent != COLOR_OFF && Split[split].colorAccent != COLOR_BLACK;
 
     // paint all cells to assigned per-note colors, overriding with per-split colors if set
     if (splitDefinesAccentColor && isAccentNote) {
@@ -547,7 +523,8 @@ void paintNormalDisplayCell(byte split, byte col, byte row) {
       cellDisplay = cellOn;
     } else if (isMainNote) {
       // use global per-note color
-      colour = scaleGetEffectiveNoteColor(octaveNote);
+      int activeScaleId = Global.activeNotes;
+      colour = scaleGetEffectiveNoteColor(activeScaleId, octaveNote);
       cellDisplay = cellOn;
     }
   }
@@ -560,19 +537,16 @@ void paintNormalDisplayCell(byte split, byte col, byte row) {
 
   // if the low row is anything but normal, set it to the appropriate color
   if (row == 0 && Split[split].lowRowMode != lowRowNormal) {
-    if ((Split[split].lowRowMode == lowRowCCX && Split[sensorSplit].lowRowCCXBehavior == lowRowCCFader) ||
-        (Split[split].lowRowMode == lowRowCCXYZ && Split[sensorSplit].lowRowCCXYZBehavior == lowRowCCFader)) {
+    if ((Split[split].lowRowMode == lowRowCCX && Split[sensorSplit].lowRowCCXBehavior == lowRowCCFader) || (Split[split].lowRowMode == lowRowCCXYZ && Split[sensorSplit].lowRowCCXYZBehavior == lowRowCCFader)) {
       colour = COLOR_BLACK;
       cellDisplay = cellOff;
-    }
-    else {
+    } else {
       colour = Split[split].colorLowRow;
       cellDisplay = cellOn;
     }
     // actually set the cell's color
     setLed(col, row, colour, cellDisplay, LED_LAYER_LOWROW);
-  }
-  else {
+  } else {
     // actually set the cell's color
     if (row == 0) {
       clearLed(col, row, LED_LAYER_LOWROW);
@@ -586,25 +560,25 @@ void paintNormalDisplayCell(byte split, byte col, byte row) {
 void paintPerSplitDisplay(byte side) {
   clearDisplay();
 
-  doublePerSplit = false;  
+  doublePerSplit = false;
 
   // set Midi Mode and channel lights
   switch (Split[side].midiMode) {
     case oneChannel:
-    {
-      setLed(1, 7, getPrimaryColor(side), cellOn);
-      break;
-    }
+      {
+        setLed(1, 7, getPrimaryColor(side), cellOn);
+        break;
+      }
     case channelPerNote:
-    {
-      setLed(1, 6, getMpeColor(side), cellOn);
-      break;
-    }
+      {
+        setLed(1, 6, getMpeColor(side), cellOn);
+        break;
+      }
     case channelPerRow:
-    {
-      setLed(1, 5, getChannelPerRowColor(side), cellOn);
-      break;
-    }
+      {
+        setLed(1, 5, getChannelPerRowColor(side), cellOn);
+        break;
+      }
   }
 
   switch (midiChannelSelect) {
@@ -638,7 +612,7 @@ void paintPerSplitDisplay(byte side) {
   }
 
   // set Pitch/X settings
-  if (Split[side].sendX == true)  {
+  if (Split[side].sendX == true) {
     setLed(8, 7, getPrimaryColor(side), cellOn);
   }
 
@@ -646,13 +620,11 @@ void paintPerSplitDisplay(byte side) {
     setLed(8, 6, getPrimaryColor(side), cellOn);
   }
 
-  if (Split[side].pitchCorrectHold == pitchCorrectHoldMedium ||
-      Split[side].pitchCorrectHold == pitchCorrectHoldSlow) {
+  if (Split[side].pitchCorrectHold == pitchCorrectHoldMedium || Split[side].pitchCorrectHold == pitchCorrectHoldSlow) {
     setLed(8, 5, getPrimaryColor(side), cellOn);
   }
 
-  if (Split[side].pitchCorrectHold == pitchCorrectHoldFast ||
-      Split[side].pitchCorrectHold == pitchCorrectHoldSlow) {
+  if (Split[side].pitchCorrectHold == pitchCorrectHoldFast || Split[side].pitchCorrectHold == pitchCorrectHoldSlow) {
     setLed(8, 4, getPrimaryColor(side), cellOn);
   }
 
@@ -661,7 +633,7 @@ void paintPerSplitDisplay(byte side) {
   }
 
   // set Timbre/Y settings
-  if (Split[side].sendY == true)  {
+  if (Split[side].sendY == true) {
     setLed(9, 7, getLimitsForYColor(side), cellOn);
   }
 
@@ -676,13 +648,12 @@ void paintPerSplitDisplay(byte side) {
       break;
   }
 
-  if (Split[side].relativeY == true)
-  {
+  if (Split[side].relativeY == true) {
     setLed(9, 4, getRelativeYColor(side), cellOn);
   }
 
   // set Loudness/Z settings
-  if (Split[side].sendZ == true)  {
+  if (Split[side].sendZ == true) {
     setLed(10, 7, getLimitsForZColor(side), cellOn);
   }
 
@@ -733,22 +704,22 @@ void paintPerSplitDisplay(byte side) {
   }
 
   // set Arpeggiator
-  if (Split[side].arpeggiator)  {
+  if (Split[side].arpeggiator) {
     setLed(14, 7, getPrimaryColor(side), cellOn);
   }
 
   // set CC faders
-  if (Split[side].ccFaders)  {
+  if (Split[side].ccFaders) {
     setLed(14, 6, getCCFadersColor(side), cellOn);
   }
 
   // set strum
-  if (Split[side].strum)  {
+  if (Split[side].strum) {
     setLed(14, 5, getPrimaryColor(side), cellOn);
   }
 
   // set sequencer
-  if (Split[side].sequencer)  {
+  if (Split[side].sequencer) {
     setLed(14, 4, getPrimaryColor(side), cellOn);
   }
 
@@ -845,7 +816,7 @@ byte getLowRowCCXYZColor(byte side) {
 byte getCCFadersColor(byte side) {
   byte color = getPrimaryColor(side);
   for (byte f = 0; f < 8; ++f) {
-    if (Split[side].ccForFader[f] != f+1) {
+    if (Split[side].ccForFader[f] != f + 1) {
       color = getSecondaryColor(side);
       break;
     }
@@ -869,14 +840,7 @@ byte getSplitHandednessColor() {
 
 byte getGuitarTuningColor() {
   byte color = globalColor;
-  if (Global.guitarTuning[0] != 30 ||
-      Global.guitarTuning[1] != 35 ||
-      Global.guitarTuning[2] != 40 ||
-      Global.guitarTuning[3] != 45 ||
-      Global.guitarTuning[4] != 50 ||
-      Global.guitarTuning[5] != 55 ||
-      Global.guitarTuning[6] != 59 ||
-      Global.guitarTuning[7] != 64) {
+  if (Global.guitarTuning[0] != 30 || Global.guitarTuning[1] != 35 || Global.guitarTuning[2] != 40 || Global.guitarTuning[3] != 45 || Global.guitarTuning[4] != 50 || Global.guitarTuning[5] != 55 || Global.guitarTuning[6] != 59 || Global.guitarTuning[7] != 64) {
     color = globalAltColor;
   }
   return color;
@@ -909,7 +873,7 @@ void paintOSVersionBuildDisplay() {
 
 // paint the current preset number for a particular side, in large block characters
 byte getPresetDisplayColumn() {
-  return LINNMODEL == 200 ? NUMCOLS-2 : NUMCOLS-1;
+  return LINNMODEL == 200 ? NUMCOLS - 2 : NUMCOLS - 1;
 }
 
 void paintPresetDisplay(byte side) {
@@ -921,11 +885,11 @@ void paintPresetDisplay(byte side) {
     if (p == Device.lastLoadedPreset) {
       color = COLOR_CYAN;
     }
-    int row = p+2;
+    int row = p + 2;
     if (row >= 6) row -= 6;
     setLed(getPresetDisplayColumn(), row, color, cellOn);
   }
-  paintSplitNumericDataDisplay(side, midiPreset[side]+1, 0, false);
+  paintSplitNumericDataDisplay(side, midiPreset[side] + 1, 0, false);
 }
 
 void paintBendRangeDisplay(byte side) {
@@ -945,7 +909,7 @@ void paintLimitsForYDisplay(byte side) {
       condfont_draw_string(0, 0, "H", getPrimaryColor(side), true);
       paintSplitNumericDataDisplay(side, Split[side].maxForY, 4, true);
       break;
-    }
+  }
 }
 
 void paintCCForYDisplay(byte side) {
@@ -953,12 +917,10 @@ void paintCCForYDisplay(byte side) {
   if (Split[side].customCCForY == 128) {
     condfont_draw_string(0, 0, "POPRS", getPrimaryColor(side), false);
     paintShowSplitSelection(side);
-  }
-  else if (Split[side].customCCForY == 129) {
+  } else if (Split[side].customCCForY == 129) {
     condfont_draw_string(0, 0, "CHPRS", getPrimaryColor(side), false);
     paintShowSplitSelection(side);
-  }
-  else {
+  } else {
     paintSplitNumericDataDisplay(side, Split[side].customCCForY, 0, false);
   }
 }
@@ -983,8 +945,7 @@ void paintLimitsForZDisplay(byte side) {
     case 0:
       if (Split[side].ccForZ14Bit) {
         condfont_draw_string(0, 0, "14BT", getPrimaryColor(side), true);
-      }
-      else {
+      } else {
         condfont_draw_string(3, 0, "7BT", getPrimaryColor(side), true);
       }
       paintShowSplitSelection(side);
@@ -997,8 +958,7 @@ void paintCCForZDisplay(byte side) {
   if (Split[side].expressionForZ != loudnessCC11) {
     setDisplayMode(displayPerSplit);
     updateDisplay();
-  }
-  else {
+  } else {
     paintSplitNumericDataDisplay(side, Split[side].customCCForZ, 0, false);
   }
 }
@@ -1006,22 +966,21 @@ void paintCCForZDisplay(byte side) {
 void paintCCForFaderDisplay(byte side) {
   clearDisplay();
   for (byte r = 0; r < NUMROWS; ++r) {
-    setLed(NUMCOLS-1, r, globalColor, cellOn);
+    setLed(NUMCOLS - 1, r, globalColor, cellOn);
   }
-  setLed(NUMCOLS-1, currentEditedCCFader[side], COLOR_GREEN, cellOn);
+  setLed(NUMCOLS - 1, currentEditedCCFader[side], COLOR_GREEN, cellOn);
   unsigned short cc = Split[side].ccForFader[currentEditedCCFader[side]];
   if (cc == 128) {
     condfont_draw_string(0, 0, "CHPRS", getPrimaryColor(side), false);
     paintShowSplitSelection(side);
-  }
-  else {
+  } else {
     paintSplitNumericDataDisplay(side, cc, 0, false);
   }
 }
 
 void paintPlayedTouchModeDisplay(byte side) {
   clearDisplay();
-  switch(Split[side].playedTouchMode) {
+  switch (Split[side].playedTouchMode) {
     case playedCell:
       adaptfont_draw_string(0, 0, "CELL", getPrimaryColor(side), true);
       break;
@@ -1092,12 +1051,11 @@ void paintLowRowCCXConfigDisplay(byte side) {
       if (Split[side].ccForLowRow == 128) {
         condfont_draw_string(0, 0, "CHPRS", getPrimaryColor(side), false);
         paintShowSplitSelection(side);
-      }
-      else {
+      } else {
         paintSplitNumericDataDisplay(side, Split[side].ccForLowRow, 0, false);
       }
       break;
-    }
+  }
 }
 
 void paintLowRowCCXYZConfigDisplay(byte side) {
@@ -1118,8 +1076,7 @@ void paintLowRowCCXYZConfigDisplay(byte side) {
       if (Split[side].ccForLowRowX == 128) {
         condfont_draw_string(0, 0, "XCHPR", getPrimaryColor(side), false);
         paintShowSplitSelection(side);
-      }
-      else {
+      } else {
         condfont_draw_string(0, 0, "X", getPrimaryColor(side), true);
         paintSplitNumericDataDisplay(side, Split[side].ccForLowRowX, 4, true);
       }
@@ -1128,8 +1085,7 @@ void paintLowRowCCXYZConfigDisplay(byte side) {
       if (Split[side].ccForLowRowY == 128) {
         condfont_draw_string(0, 0, "YCHPR", getPrimaryColor(side), false);
         paintShowSplitSelection(side);
-      }
-      else {
+      } else {
         condfont_draw_string(0, 0, "Y", getPrimaryColor(side), true);
         paintSplitNumericDataDisplay(side, Split[side].ccForLowRowY, 4, true);
       }
@@ -1138,8 +1094,7 @@ void paintLowRowCCXYZConfigDisplay(byte side) {
       if (Split[side].ccForLowRowZ == 128) {
         condfont_draw_string(0, 0, "ZCHPR", getPrimaryColor(side), false);
         paintShowSplitSelection(side);
-      }
-      else {
+      } else {
         condfont_draw_string(0, 0, "Z", getPrimaryColor(side), true);
         paintSplitNumericDataDisplay(side, Split[side].ccForLowRowZ, 4, true);
       }
@@ -1236,8 +1191,7 @@ void paintSleepConfig() {
     case 0:
       if (Device.sleepDelay == 0) {
         adaptfont_draw_string(0, 0, "NOW", globalColor, true);
-      }
-      else {
+      } else {
         adaptfont_draw_string(0, 0, "D", globalColor, true);
         paintNumericDataDisplay(globalColor, Device.sleepDelay, 4, true);
       }
@@ -1264,8 +1218,7 @@ void paintRowOffset() {
   clearDisplay();
   if (Global.customRowOffset == -17) {
     condfont_draw_string(0, 0, "-GUI", globalColor, false);
-  }
-  else {
+  } else {
     paintNumericDataDisplay(globalColor, Global.customRowOffset, 0, false);
   }
 }
@@ -1284,8 +1237,7 @@ void paintMIDIThrough() {
   clearDisplay();
   if (Device.midiThrough) {
     adaptfont_draw_string(0, 0, "THRU", globalColor, true);
-  }
-  else {
+  } else {
     adaptfont_draw_string(0, 0, LINNMODEL == 200 ? "NORM" : "NRM", globalColor, true);
   }
 }
@@ -1330,30 +1282,26 @@ void paintNumericDataDisplay(byte color, short value, short offset, boolean cond
   if (value < 100) {
     format = "%2d";
     pos = condensed ? 3 : 5;
-  }
-  else if (value >= 100 && value < 200) {
+  } else if (value >= 100 && value < 200) {
     // Handle the "1" character specially, to get the spacing right
     if (condensed) {
       condfont_draw_string(offset, 0, "1", color, false);
-    }
-    else {
+    } else {
       smallfont_draw_string(offset + 2, 0, "1", color, false);
     }
     value -= 100;
-    format = "%02d";     // to make sure a leading zero is included
+    format = "%02d";  // to make sure a leading zero is included
     pos = condensed ? 3 : 5;
-  }
-  else {
+  } else {
     format = "%-d";
     pos = 0;
   }
 
   snprintf(str, sizeof(str), format, value);
   if (condensed) {
-    condfont_draw_string(pos+offset, 0, str, color, false);
-  }
-  else {
-    smallfont_draw_string(pos+offset, 0, str, color, false);
+    condfont_draw_string(pos + offset, 0, str, color, false);
+  } else {
+    smallfont_draw_string(pos + offset, 0, str, color, false);
   }
 }
 
@@ -1377,7 +1325,7 @@ void paintNoteDataDisplay(byte color, short noteNumber, short offset) {
     default: format = "%d"; break;
   }
 
-  snprintf(str, sizeof(str), format, int(noteNumber/12) - 2);
+  snprintf(str, sizeof(str), format, int(noteNumber / 12) - 2);
   condfont_draw_string(offset, 0, str, color, false);
 }
 
@@ -1389,7 +1337,7 @@ void paintVolumeDisplay(byte side) {
 }
 
 void paintVolumeDisplayRow(byte side) {
-  paintCCFaderDisplayRow(side, 5, getPrimaryColor(side), 7, 1, NUMCOLS-2);
+  paintCCFaderDisplayRow(side, 5, getPrimaryColor(side), 7, 1, NUMCOLS - 2);
 }
 
 void paintOctaveTransposeDisplay(byte side) {
@@ -1399,13 +1347,11 @@ void paintOctaveTransposeDisplay(byte side) {
   // Paint the octave shift value
   if (!doublePerSplit || Split[LEFT].transposeOctave == Split[RIGHT].transposeOctave) {
     paintOctave(getPrimaryColor(Global.currentPerSplit), 8, OCTAVE_ROW, Split[side].transposeOctave);
-  }
-  else if (doublePerSplit) {
+  } else if (doublePerSplit) {
     if (abs(Split[LEFT].transposeOctave) > abs(Split[RIGHT].transposeOctave)) {
       paintOctave(getPrimaryColor(LEFT), 8, OCTAVE_ROW, Split[LEFT].transposeOctave);
       paintOctave(getPrimaryColor(RIGHT), 8, OCTAVE_ROW, Split[RIGHT].transposeOctave);
-    }
-    else {
+    } else {
       paintOctave(getPrimaryColor(RIGHT), 8, OCTAVE_ROW, Split[RIGHT].transposeOctave);
       paintOctave(getPrimaryColor(LEFT), 8, OCTAVE_ROW, Split[LEFT].transposeOctave);
     }
@@ -1414,13 +1360,11 @@ void paintOctaveTransposeDisplay(byte side) {
   // Paint the pitch transpose values
   if (!doublePerSplit || Split[LEFT].transposePitch == Split[RIGHT].transposePitch) {
     paintTranspose(getPrimaryColor(Global.currentPerSplit), SWITCH_1_ROW, Split[side].transposePitch);
-  }
-  else if (doublePerSplit) {
+  } else if (doublePerSplit) {
     if (abs(Split[LEFT].transposePitch) > abs(Split[RIGHT].transposePitch)) {
       paintTranspose(getPrimaryColor(LEFT), SWITCH_1_ROW, Split[LEFT].transposePitch);
       paintTranspose(getPrimaryColor(RIGHT), SWITCH_1_ROW, Split[RIGHT].transposePitch);
-    }
-    else {
+    } else {
       paintTranspose(getPrimaryColor(RIGHT), SWITCH_1_ROW, Split[RIGHT].transposePitch);
       paintTranspose(getPrimaryColor(LEFT), SWITCH_1_ROW, Split[LEFT].transposePitch);
     }
@@ -1429,26 +1373,24 @@ void paintOctaveTransposeDisplay(byte side) {
   // Paint the light transpose values
   if (!doublePerSplit || Split[LEFT].transposeLights == Split[RIGHT].transposeLights) {
     paintTranspose(getPrimaryColor(Global.currentPerSplit), SWITCH_2_ROW, Split[side].transposeLights);
-  }
-  else if (doublePerSplit) {
+  } else if (doublePerSplit) {
     if (abs(Split[LEFT].transposeLights) > abs(Split[RIGHT].transposeLights)) {
       paintTranspose(getPrimaryColor(LEFT), SWITCH_2_ROW, Split[LEFT].transposeLights);
       paintTranspose(getPrimaryColor(RIGHT), SWITCH_2_ROW, Split[RIGHT].transposeLights);
-    }
-    else {
+    } else {
       paintTranspose(getPrimaryColor(RIGHT), SWITCH_2_ROW, Split[RIGHT].transposeLights);
       paintTranspose(getPrimaryColor(LEFT), SWITCH_2_ROW, Split[LEFT].transposeLights);
     }
   }
 
   // Paint the color offset values
-  short colorOffsetTranspose = ((scaleGetEffectiveColorOffset() + 6) % 12) - 6;
+  int activePaletteId = Global.activePalette;
+  short colorOffsetTranspose = ((scaleGetEffectiveColorOffset(activePaletteId) + 6) % 12) - 6;
   if (!doublePerSplit || Split[LEFT].transposeLights == colorOffsetTranspose) {
     paintTranspose(getPrimaryColor(Global.currentPerSplit), VOLUME_ROW, colorOffsetTranspose);
-    byte rootColor = scaleGetEffectiveNoteColor(0);
+    byte rootColor = scaleGetEffectiveNoteColor(activePaletteId, 0);
     setLed(8, VOLUME_ROW, rootColor, cellOn);
-  }
-  else if (doublePerSplit) {
+  } else if (doublePerSplit) {
     paintTranspose(getPrimaryColor(RIGHT), VOLUME_ROW, colorOffsetTranspose);
     paintTranspose(getPrimaryColor(LEFT), VOLUME_ROW, colorOffsetTranspose);
   }
@@ -1458,48 +1400,48 @@ void paintOctaveTransposeDisplay(byte side) {
 
 void paintOctave(byte color, byte midcol, byte row, short octave) {
   setLed(midcol, row, getSecondaryColor(Global.currentPerSplit), cellOn);
-  if (0 == color) { 
-    if (0 == color) color = octave > 0 ? COLOR_GREEN : COLOR_RED ;
+  if (0 == color) {
+    if (0 == color) color = octave > 0 ? COLOR_GREEN : COLOR_RED;
   }
 
   switch (octave) {
     case -60:
-      setLed(midcol-5, row, color, cellOn);
+      setLed(midcol - 5, row, color, cellOn);
       // lack of break here is purposeful, we want to fall through...
     case -48:
-      setLed(midcol-4, row, color, cellOn);
+      setLed(midcol - 4, row, color, cellOn);
       // lack of break here is purposeful, we want to fall through...
     case -36:
-      setLed(midcol-3, row, color, cellOn);
+      setLed(midcol - 3, row, color, cellOn);
       // lack of break here is purposeful, we want to fall through...
     case -24:
-      setLed(midcol-2, row, color, cellOn);
+      setLed(midcol - 2, row, color, cellOn);
       // lack of break here is purposeful, we want to fall through...
     case -12:
-      setLed(midcol-1, row, color, cellOn);
+      setLed(midcol - 1, row, color, cellOn);
       break;
 
     case 60:
-      setLed(midcol+5, row, color, cellOn);
+      setLed(midcol + 5, row, color, cellOn);
       // lack of break here is purposeful, we want to fall through...
     case 48:
-      setLed(midcol+4, row, color, cellOn);
+      setLed(midcol + 4, row, color, cellOn);
       // lack of break here is purposeful, we want to fall through...
     case 36:
-      setLed(midcol+3, row, color, cellOn);
+      setLed(midcol + 3, row, color, cellOn);
       // lack of break here is purposeful, we want to fall through...
     case 24:
-      setLed(midcol+2, row, color, cellOn);
+      setLed(midcol + 2, row, color, cellOn);
       // lack of break here is purposeful, we want to fall through...
     case 12:
-      setLed(midcol+1, row, color, cellOn);
+      setLed(midcol + 1, row, color, cellOn);
       break;
   }
 }
 
 void paintTranspose(byte color, byte row, short transpose) {
   byte midcol = 8;
-  setLed(midcol, row, getSecondaryColor(Global.currentPerSplit), cellOn);    // paint the center cell of the transpose range
+  setLed(midcol, row, getSecondaryColor(Global.currentPerSplit), cellOn);  // paint the center cell of the transpose range
 
   if (transpose != 0) {
     if (0 == color) color = transpose < 0 ? COLOR_RED : COLOR_GREEN;
@@ -1551,32 +1493,24 @@ void paintSwitchAssignment(byte mode) {
   }
 }
 
-void updateGlobalSettingsFlashTempo(unsigned long now) {  
+void updateGlobalSettingsFlashTempo(unsigned long now) {
   if (displayMode == displayGlobal || displayMode == displayGlobalWithTempo) {
     paintGlobalSettingsFlashTempo(now);
-  }
-  else if (controlButton != GLOBAL_SETTINGS_ROW &&
-           !isSyncedToMidiClock() &&
-           (isArpeggiatorEnabled(Global.currentPerSplit) ||
-            isVisibleSequencer() ||
-            isStandaloneMidiClockRunning())) {
+  } else if (controlButton != GLOBAL_SETTINGS_ROW && !isSyncedToMidiClock() && (isArpeggiatorEnabled(Global.currentPerSplit) || isVisibleSequencer() || isStandaloneMidiClockRunning())) {
     paintGlobalSettingsFlashTempo(now, 0, 0);
   }
 }
 
 inline void paintGlobalSettingsFlashTempo(unsigned long now) {
-    paintGlobalSettingsFlashTempo(now, 14, 3);
+  paintGlobalSettingsFlashTempo(now, 14, 3);
 }
 
 inline void paintGlobalSettingsFlashTempo(unsigned long now, byte col, byte row) {
   if (!animationActive && !userFirmwareActive) {
     bool flash_on = false;
-    if (isVisibleSequencer())
-    {
+    if (isVisibleSequencer()) {
       flash_on = sequencerFlashTempoOn();
-    }
-    else
-    {
+    } else {
       flash_on = (clock24PPQ == 0);
     }
 
@@ -1603,18 +1537,16 @@ void paintGlobalSettingsDisplay() {
   // values are equal to the LED rows.
   if (Global.velocitySensitivity == velocityFixed) {
     setLed(10, Global.velocitySensitivity, getFixedVelocityColor(), cellOn);
-  }
-  else {
+  } else {
     setLed(10, Global.velocitySensitivity, getVelocityColor(), cellOn);
   }
   setLed(11, Global.pressureSensitivity, getPressureColor(), cellOn);
 
   // Show the MIDI input/output configuration
   if (Global.midiIO == 1) {
-    setLed(15, 0, getMIDIUSBColor(), cellOn); // for MIDI over USB
-  }
-  else {
-    setLed(15, 1, getMIDIThroughColor(), cellOn); // for MIDI jacks
+    setLed(15, 0, getMIDIUSBColor(), cellOn);  // for MIDI over USB
+  } else {
+    setLed(15, 1, getMIDIThroughColor(), cellOn);  // for MIDI jacks
   }
 
   // set light for sleep mode
@@ -1641,32 +1573,32 @@ void paintGlobalSettingsDisplay() {
       setLed(1, 3, getSplitHandednessColor(), cellOn);
     }
 
-// jaysullivan: redraw light settings (global settings)
+    // jaysullivan: redraw light settings (global settings)
     scaleRedraw();
 
     switch (Global.rowOffset) {
-      case ROWOFFSET_NOOVERLAP: // no overlap
+      case ROWOFFSET_NOOVERLAP:  // no overlap
         lightLed(5, 3);
         break;
-      case 3:        // +3
+      case 3:  // +3
         lightLed(5, 0);
         break;
-      case 4:        // +4
+      case 4:  // +4
         lightLed(6, 0);
         break;
-      case 5:        // +5
+      case 5:  // +5
         lightLed(5, 1);
         break;
-      case 6:        // +6
+      case 6:  // +6
         lightLed(6, 1);
         break;
-      case 7:        // +7
+      case 7:  // +7
         lightLed(5, 2);
         break;
-      case ROWOFFSET_OCTAVECUSTOM:      // +octave or custom
+      case ROWOFFSET_OCTAVECUSTOM:  // +octave or custom
         setLed(6, 2, getRowOffsetColor(), cellOn);
         break;
-      case ROWOFFSET_GUITAR:            // guitar tuning
+      case ROWOFFSET_GUITAR:  // guitar tuning
         setLed(6, 3, getGuitarTuningColor(), cellOn);
         break;
       case ROWOFFSET_ZERO:
@@ -1678,8 +1610,7 @@ void paintGlobalSettingsDisplay() {
     if (switchSelect == SWITCH_FOOT_B) {
       lightLed(7, SWITCH_FOOT_L);
       lightLed(7, SWITCH_FOOT_R);
-    }
-    else {
+    } else {
       lightLed(7, switchSelect);
     }
     paintSwitchAssignment(Global.switchAssignment[switchSelect]);
@@ -1749,8 +1680,7 @@ void paintGlobalSettingsDisplay() {
     // show the arpeggiator octave
     if (Global.arpOctave == 1) {
       lightLed(14, 0);
-    }
-    else if (Global.arpOctave == 2) {
+    } else if (Global.arpOctave == 2) {
       lightLed(14, 1);
     }
 
@@ -1812,8 +1742,7 @@ byte getSwitchTapTempoColor() {
 }
 
 byte getVelocityColor() {
-  if (Global.minForVelocity != DEFAULT_MIN_VELOCITY ||
-      Global.maxForVelocity != DEFAULT_MAX_VELOCITY) {
+  if (Global.minForVelocity != DEFAULT_MIN_VELOCITY || Global.maxForVelocity != DEFAULT_MAX_VELOCITY) {
     return globalAltColor;
   }
   return globalColor;
@@ -1891,12 +1820,12 @@ void paintEditAudienceMessage() {
 
 // chan value is 1-16
 void setMidiChannelLed(byte chan, byte color) {
-    if (chan > 16) {
-      chan -= 16;
-    }
-    byte row = 7 - (chan - 1) / 4;
-    byte col = 3 + (chan - 1) % 4;
-    setLed(col, row, color, cellOn);
+  if (chan > 16) {
+    chan -= 16;
+  }
+  byte row = 7 - (chan - 1) / 4;
+  byte col = 3 + (chan - 1) % 4;
+  setLed(col, row, color, cellOn);
 }
 
 // light per-split midi mode and single midi channel lights
@@ -1916,25 +1845,21 @@ void showPerRowMidiChannel(byte side) {
 void showPerNoteMidiChannels(byte side) {
   for (byte chan = 1; chan <= 16; ++chan) {
     // use accent color to show that in MPE mode the main channel is special
-    if (Split[side].mpe &&
-        Split[side].midiChanMainEnabled &&
-        chan == Split[side].midiChanMain) {
+    if (Split[side].mpe && Split[side].midiChanMainEnabled && chan == Split[side].midiChanMain) {
       setMidiChannelLed(chan, getSecondaryColor(side));
-    }
-    else if (Split[side].midiChanSet[chan-1]) {
+    } else if (Split[side].midiChanSet[chan - 1]) {
       setMidiChannelLed(chan, getPrimaryColor(side));
     }
   }
 }
 
 void paintLowRowPressureBar() {
-  int pressureColumn = FXD_TO_INT(FXD_MUL(FXD_DIV(FXD_FROM_INT(sensorCell->pressureZ), FXD_CONST_1016), FXD_FROM_INT(NUMCOLS-2))) + 1;
-    
+  int pressureColumn = FXD_TO_INT(FXD_MUL(FXD_DIV(FXD_FROM_INT(sensorCell->pressureZ), FXD_CONST_1016), FXD_FROM_INT(NUMCOLS - 2))) + 1;
+
   for (byte c = 1; c < NUMCOLS; ++c) {
     if (c <= pressureColumn) {
       setLed(c, 0, COLOR_GREEN, cellOn);
-    }
-    else {
+    } else {
       clearLed(c, 0);
     }
   }

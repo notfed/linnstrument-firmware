@@ -755,8 +755,9 @@ struct GlobalSettings {
   int mainNotes[12];                         // bitmask array that determines which notes receive "main" lights
   int accentNotes[12];                       // bitmask array that determines which notes receive accent lights (octaves, white keys, black keys, etc.)
   byte scaleMode[12];                        // Assigns a "mode" to each scale. This results in an effective rotation of the scale. This is 1-indexed (0 means unassigned).
-  byte scaleNoteColors[12];                  // Assign a color to each note
-  byte scaleColorOffset;                     // An index into scaleNoteColors marking the "first" color (denoting the root note). This is 1-indexed (0 means unassigned).
+  byte activePalette;                        // One of 12 palettes (0-11)
+  byte paletteColors[12][12];                // For each palette, assign a color to each note
+  byte paletteColorOffset[12];               // For each palette, an index marking the "first" color (denoting the root note). This is 1-indexed (0 means unassigned).
   byte rowOffset;                            // interval between rows. 0 = no overlap, 1-12 = interval, 13 = guitar
   signed char customRowOffset;               // the custom row offset that can be configured at the location of the octave setting
   byte guitarTuning[MAXROWS];                // the notes used for each row for the guitar tuning, 0-127
