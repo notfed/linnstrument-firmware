@@ -2,24 +2,25 @@
 // TODO:
 // -  Handle split-screen
 // -------------------------------
+boolean isTranspose2Enabled() { return true; }
 
-boolean transpose2Enabled = true;
+short curNumCellsTouched = 0;
 
-boolean isTranspose2Enabled() {
-  return transpose2Enabled;
-}
+boolean isDragging = false;
+unsigned long dragUpdateTime = 0;
+unsigned long lastReleaseAllTime = 0;
+short dragFromCol = 0;
+short dragFromRow = 0;
+short dragFromTransposeLights = 0;
+short dragToCol = 0;
+short dragToRow = 0;
+short dragDeltaCol = 0;
+short dragDeltaRow = 0;
 
-boolean setIsTranspose2Enabled(boolean value) {
-  transpose2Enabled = value;
-}
-
-short downCount = 0;
-
-byte prevDownSensorCol = -2;
-byte prevDownSensorRow = -2;
-
-byte prevUpSensorCol = -2;
-byte prevUpSensorRow = -2;
+byte prevTouchSensorCol = -2;
+byte prevTouchSensorRow = -2;
+byte prevReleaseSensorCol = -2;
+byte prevReleaseSensorRow = -2;
 
 
 // signed char transposeOctave;            // -60, -48, -36, -24, -12, 0, +12, +24, +36, +48, +60
@@ -33,23 +34,25 @@ void transpose2PaintOctaveTransposeDisplay() {
 }
 
 void transpose2HandleOctaveTransposeNewTouch() {
-  addOrRemovePress(1);
-  colorPress();
+  maybeTimeoutDrag();
+  curNumCellsTouched++; 
+  colorLastCellTouched();
 
-  if (didSingleDragLeft()) {
-    // Split[Global.currentPerSplit].transposePitch++;
-    Split[Global.currentPerSplit].transposeLights--;
-    normalizeTranspose();
+  if (!isDragging) {
+    dragStart();
+  } else {
+    dragUpdate();
   }
-  else if (didSingleDragRight()) {
-    // Split[Global.currentPerSplit].transposePitch--;
-    Split[Global.currentPerSplit].transposeLights++;
+  if (dragDeltaRow == 0 && dragDeltaCol != 0) {
+    // Split[Global.currentPerSplit].transposePitch++;
+    Split[Global.currentPerSplit].transposeLights =
+      dragFromTransposeLights + dragDeltaCol;
     normalizeTranspose();
   }
 
   // Save cell for next event
-  prevDownSensorCol = sensorCol;
-  prevDownSensorRow = sensorRow;
+  prevTouchSensorCol = sensorCol;
+  prevTouchSensorRow = sensorRow;
 
   updateDisplay();
 }
@@ -73,22 +76,57 @@ void normalizeTranspose() {
 }
 
 void transpose2HandleOctaveTransposeRelease() {
-  addOrRemovePress(-1);
-  colorPress();
+  curNumCellsTouched--;
 
   // Save cell for next event
-  prevUpSensorCol = sensorCol;
-  prevUpSensorRow = sensorRow;
+  prevReleaseSensorCol = sensorCol;
+  prevReleaseSensorRow = sensorRow;
 
-  // updateDisplay();
+  if (curNumCellsTouched == 0) {
+    lastReleaseAllTime = micros();
+  }
 }
 
-void addOrRemovePress(short delta) {
-    downCount += delta; 
+static int mod(int a, int b) {
+    return (a % b + b) % b;
 }
 
-void colorPress() {
-  // switch (downCount) {
+const unsigned long DRAG_TIMEOUT_US = 50000;
+
+static boolean maybeTimeoutDrag() {
+  unsigned long now = micros();
+  if (curNumCellsTouched == 0 &&
+      calcTimeDelta(now, lastReleaseAllTime) >= DRAG_TIMEOUT_US) {
+    isDragging = false;
+  }
+}
+
+static void dragStart() {
+  isDragging = true;
+  dragFromCol = sensorCol;
+  dragFromRow = sensorRow;
+  dragFromTransposeLights = Split[Global.currentPerSplit].transposeLights;
+  dragUpdate();
+}
+
+static void dragUpdate() {
+  dragUpdateTime = micros();
+  dragToCol = sensorCol;
+  dragToRow = sensorRow;
+  dragDeltaCol = sensorCol - dragFromCol;
+  dragDeltaRow = sensorRow - dragFromRow;
+}
+
+static boolean didSingleDragLeft() {
+  return sensorRow == prevTouchSensorRow && sensorCol == prevTouchSensorCol - 1;
+}
+
+static boolean didSingleDragRight() {
+  return sensorRow == prevTouchSensorRow && sensorCol == prevTouchSensorCol + 1;
+}
+
+void colorLastCellTouched() {
+  // switch (curNumCellsTouched) {
   //   case 0:
   //       setLed(sensorCol, sensorRow, COLOR_BLACK, cellOff);
   //       break;
@@ -105,16 +143,4 @@ void colorPress() {
   //       setLed(sensorCol, sensorRow, COLOR_VIOLET, cellOn);
   //       break;
   // }
-}
-
-int mod(int a, int b) {
-    return (a % b + b) % b;
-}
-
-static boolean didSingleDragLeft() {
-  return sensorRow == prevDownSensorRow && sensorCol == prevDownSensorCol - 1;
-}
-
-static boolean didSingleDragRight() {
-  return sensorRow == prevDownSensorRow && sensorCol == prevDownSensorCol + 1;
 }
