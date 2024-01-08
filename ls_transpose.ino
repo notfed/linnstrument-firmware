@@ -43,12 +43,11 @@ void transpose2HandleOctaveTransposeNewTouch() {
   } else {
     dragUpdate();
   }
-  if (dragDeltaRow == 0 && dragDeltaCol != 0) {
-    // Split[Global.currentPerSplit].transposePitch++;
-    Split[Global.currentPerSplit].transposeLights =
-      dragFromTransposeLights + dragDeltaCol;
-    normalizeTranspose();
-  }
+  
+  // Split[Global.currentPerSplit].transposePitch++;
+  Split[Global.currentPerSplit].transposeLights =
+    dragFromTransposeLights + dragDeltaCol + 5 * dragDeltaRow;
+  normalizeTranspose();
 
   // Save cell for next event
   prevTouchSensorCol = sensorCol;
