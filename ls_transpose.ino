@@ -6,16 +6,21 @@ boolean isTranspose2Enabled() { return true; }
 
 short curNumCellsTouched = 0;
 
+byte previewNote = 0;
+boolean isDraggingFromRoot = false;
 boolean isDragging = false;
 unsigned long dragUpdateTime = 0;
 unsigned long lastReleaseAllTime = 0;
 short dragFromCol = 0;
 short dragFromRow = 0;
+short dragFromTransposePitch = 0;
 short dragFromTransposeLights = 0;
 short dragToCol = 0;
 short dragToRow = 0;
 short dragDeltaCol = 0;
 short dragDeltaRow = 0;
+byte dragFromNote = 0;
+byte midiChannel = 0;
 
 byte prevTouchSensorCol = -2;
 byte prevTouchSensorRow = -2;
@@ -30,7 +35,15 @@ byte prevReleaseSensorRow = -2;
 void transpose2PaintOctaveTransposeDisplay() {
   blinkAllRootNotes = true;
   paintNormalDisplay();
+  if (isDragging && isDraggingFromRoot) {
+    setLed(dragFromCol, dragFromRow, COLOR_RED, cellOn); // scaleGetEffectiveNoteColor(dragFromNote)
+  }
   blinkAllRootNotes = false;
+  blinkNote = -1;
+}
+
+static inline short dragOffset() {
+  return dragDeltaCol + 5 * dragDeltaRow;
 }
 
 void transpose2HandleOctaveTransposeNewTouch() {
@@ -43,10 +56,17 @@ void transpose2HandleOctaveTransposeNewTouch() {
   } else {
     dragUpdate();
   }
-  
-  // Split[Global.currentPerSplit].transposePitch++;
-  Split[Global.currentPerSplit].transposeLights =
-    dragFromTransposeLights + dragDeltaCol + 5 * dragDeltaRow;
+
+  if (isDraggingFromRoot) {
+    // TODO: Move this to dragStart so it only happens once
+    midiChannel = takeChannel(Global.currentPerSplit, sensorRow); //takeChannel(Global.currentPerSplit, sensorRow);
+    previewNote = transposedNote(Global.currentPerSplit, sensorCol, sensorRow);
+    midiSendNoteOff(Global.currentPerSplit, previewNote, midiChannel);
+    midiSendNoteOn(Global.currentPerSplit, previewNote, 96, midiChannel);
+  } else {
+    Split[Global.currentPerSplit].transposeLights =
+      dragFromTransposeLights + dragOffset();
+  }
   normalizeTranspose();
 
   // Save cell for next event
@@ -77,33 +97,53 @@ void normalizeTranspose() {
 void transpose2HandleOctaveTransposeRelease() {
   curNumCellsTouched--;
 
-  // Save cell for next event
-  prevReleaseSensorCol = sensorCol;
-  prevReleaseSensorRow = sensorRow;
-
   if (curNumCellsTouched == 0) {
     lastReleaseAllTime = micros();
   }
+
+  // Save cell for next event
+  prevReleaseSensorCol = sensorCol;
+  prevReleaseSensorRow = sensorRow;
 }
 
 static int mod(int a, int b) {
-    return (a % b + b) % b;
+  return (a % b + b) % b;
 }
 
 const unsigned long DRAG_TIMEOUT_US = 50000;
 
-static boolean maybeTimeoutDrag() {
+boolean maybeTimeoutDrag() {
   unsigned long now = micros();
-  if (curNumCellsTouched == 0 &&
+  if (isDragging && curNumCellsTouched == 0 &&
       calcTimeDelta(now, lastReleaseAllTime) >= DRAG_TIMEOUT_US) {
-    isDragging = false;
+    dragStop();
   }
+}
+
+static void dragStop() {
+  if (isDragging && isDraggingFromRoot) {
+    midiSendNoteOff(Global.currentPerSplit, previewNote, midiChannel);
+    releaseChannel(Global.currentPerSplit, midiChannel);
+    Split[Global.currentPerSplit].transposePitch =
+      dragFromTransposePitch + dragOffset();
+  }
+  isDragging = false;
+  updateDisplay();
 }
 
 static void dragStart() {
   isDragging = true;
   dragFromCol = sensorCol;
   dragFromRow = sensorRow;
+  dragFromNote = getPitch(sensorCol, sensorRow);
+  isDraggingFromRoot = (dragFromNote % 12) == 0;
+  if (isDraggingFromRoot) {
+    // blinkMiddleRootNote = true;
+    // paintNormalDisplay();
+    // setLed(sensorCol, sensorRow, COLOR_RED, cellFastPulse); // scaleGetEffectiveNoteColor(dragFromNote)
+    // blinkMiddleRootNote = false;
+  }
+  dragFromTransposePitch = Split[Global.currentPerSplit].transposePitch;
   dragFromTransposeLights = Split[Global.currentPerSplit].transposeLights;
   dragUpdate();
 }
@@ -142,4 +182,10 @@ void colorLastCellTouched() {
   //       setLed(sensorCol, sensorRow, COLOR_VIOLET, cellOn);
   //       break;
   // }
+}
+
+static byte getPitch(byte col, byte row) {
+  short displayedNote = getNoteNumber(Global.currentPerSplit, col, row) +
+    Split[Global.currentPerSplit].transposeOctave;
+  return displayedNote;
 }

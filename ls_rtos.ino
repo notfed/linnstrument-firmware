@@ -75,6 +75,13 @@ inline void performContinuousTasks(unsigned long nowMicros) {
     return;
   }
 
+  static boolean continuousDragTimeout = false;
+  if (!continuousDragTimeout) {
+    continuousDragTimeout = true;
+    maybeTimeoutDrag();
+    continuousDragTimeout = false;
+  }
+
   static boolean continuousSerialIO = false;
 
   boolean ledsRefreshed = false;

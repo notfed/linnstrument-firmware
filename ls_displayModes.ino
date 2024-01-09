@@ -67,7 +67,8 @@ These routines handle the painting of these display modes on LinnStument's 208 L
 
 unsigned long displayModeStart = 0;   // indicates when the current display mode was activated
 boolean blinkMiddleRootNote = false;  // indicates whether the middle root note should be blinking
-boolean blinkAllRootNotes = false;  // indicates whether all root notes should be blinking
+boolean blinkAllRootNotes = false;    // indicates whether all root notes should be blinking
+short blinkNote = -1;                 // if non-negative, blink the specified note
 
 // changes the active display mode
 void setDisplayMode(DisplayMode mode) {
@@ -528,8 +529,14 @@ void paintNormalDisplayCell(byte split, byte col, byte row) {
     } else if (isMainNote) {
       // use global per-note color
       colour = scaleGetEffectiveNoteColor(octaveNote);
-      boolean isRootNote = (actualnote % 12) == 0; // TODO: Hardcoded to C for now?
-      cellDisplay = blinkAllRootNotes && isRootNote ? cellFastPulse : cellOn;
+      boolean isDisplayedNoteRoot = octaveNote == 0; // TODO: Hardcoded to C for now?
+      if (blinkAllRootNotes && isDisplayedNoteRoot) {
+        cellDisplay = cellFastPulse;
+      } else if (blinkNote >= 0 && blinkNote <= 127 && actualnote == blinkNote) {
+        cellDisplay = cellFastPulse;
+      } else {
+        cellDisplay = cellOn;
+      }
     }
   }
 
