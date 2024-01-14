@@ -16,14 +16,14 @@ short curNumCellsTouched = 0;
 byte previewNote = 0;
 boolean isDraggingFromRoot = false;
 boolean isDragging = false;
-Layer isDraggingLayer = layerAll;
+Layer dragLayer = layerAll;
 unsigned long dragUpdateTime = 0;
 unsigned long lastReleaseAllTime = 0;
 short dragFromCol = 0;
 short dragFromRow = 0;
-short dragFromTransposePitch = 0;
-short dragFromTransposeColor = 0;
-short dragFromTransposeLights = 0;
+short transposePitchAtDragStart = 0;
+short transposeLightsAtDragStart = 0;
+short paletteColorOffsetAtDragStart = 0;
 short dragToCol = 0;
 short dragToRow = 0;
 short dragDeltaCol = 0;
@@ -43,11 +43,12 @@ byte prevReleaseSensorRow = -2;
 void transpose2PaintOctaveTransposeDisplay() {
   blinkAllRootNotes = true;
   paintNormalDisplay();
-  if (isDragging && isDraggingLayer == layerPitch) {
-    setLed(dragFromCol, dragFromRow, COLOR_WHITE, cellOn); // scaleGetEffectiveNoteColor(dragFromNote)
-  }
   blinkAllRootNotes = false;
   blinkNote = -1;
+  if (isDragging) {
+    // setLed(dragFromCol, dragFromRow, COLOR_WHITE, cellOn); // scaleGetEffectiveNoteColor(dragFromNote)
+    drawNoteGrid();
+  }
 }
 
 static inline short dragOffset() {
@@ -66,17 +67,16 @@ void transpose2HandleOctaveTransposeNewTouch() {
   }
 
 
-  if (isDraggingLayer == layerColor) {
-    Global.activePalette[Global.paletteColorOffset] =
-      mod(dragFromTransposeColor - dragOffset(), 12);
-  } else if (isDraggingLayer == layerPitch) {
+  if (dragLayer == layerColor) {
+    scaleSetAssignedColorOffset(mod(paletteColorOffsetAtDragStart + dragOffset(), 12));
+  } else if (dragLayer == layerPitch) {
     midiChannel = takeChannel(Global.currentPerSplit, sensorRow); //takeChannel(Global.currentPerSplit, sensorRow);
     previewNote = transposedNote(Global.currentPerSplit, sensorCol, sensorRow);
     midiSendNoteOff(Global.currentPerSplit, previewNote, midiChannel);
     midiSendNoteOn(Global.currentPerSplit, previewNote, 96, midiChannel);
-  } else if (isDraggingLayer == layerAll){
+  } else if (dragLayer == layerAll){
     Split[Global.currentPerSplit].transposeLights =
-      dragFromTransposeLights + dragOffset();
+      transposeLightsAtDragStart + dragOffset();
   }
   normalizeTranspose();
 
@@ -99,13 +99,13 @@ void transpose2HandleOctaveTransposeRelease() {
   prevReleaseSensorRow = sensorRow;
 }
 
-static int mod(int a, int b) {
+static short mod(short a, short b) {
   return (a % b + b) % b;
 }
 
 const unsigned long DRAG_TIMEOUT_US = 50000;
 
-boolean maybeTimeoutDrag() {
+static void maybeTimeoutDrag() {
   unsigned long now = micros();
   if (isDragging && curNumCellsTouched == 0 &&
       calcTimeDelta(now, lastReleaseAllTime) >= DRAG_TIMEOUT_US) {
@@ -114,11 +114,11 @@ boolean maybeTimeoutDrag() {
 }
 
 static void dragStop() {
-  if (isDragging && isDraggingLayer == layerPitch) {
+  if (isDragging && dragLayer == layerPitch) {
     midiSendNoteOff(Global.currentPerSplit, previewNote, midiChannel);
     releaseChannel(Global.currentPerSplit, midiChannel);
     Split[Global.currentPerSplit].transposePitch =
-      dragFromTransposePitch + dragOffset();
+      transposePitchAtDragStart + dragOffset();
   }
   isDragging = false;
   updateDisplay();
@@ -136,13 +136,13 @@ static void dragStart() {
     // setLed(sensorCol, sensorRow, COLOR_RED, cellFastPulse); // scaleGetEffectiveNoteColor(dragFromNote)
     // blinkMiddleRootNote = false;
   }
-  dragFromTransposePitch = Split[Global.currentPerSplit].transposePitch;
-  dragFromTransposeLights = Split[Global.currentPerSplit].transposeLights;
-  dragFromTransposeColor = Global.activePalette[Global.paletteColorOffset];
+  transposePitchAtDragStart = Split[Global.currentPerSplit].transposePitch;
+  transposeLightsAtDragStart = Split[Global.currentPerSplit].transposeLights;
+  paletteColorOffsetAtDragStart = ((short)scaleGetEffectiveColorOffset());
   if (isDraggingFromRoot) {
-    isDraggingLayer = layerColor;
+    dragLayer = layerColor;
   } else {
-    isDraggingLayer = layerAll;
+    dragLayer = layerAll;
   }
   dragUpdate();
 }
@@ -197,4 +197,39 @@ void normalizeTranspose() {
     // if (Split[Global.currentPerSplit].transposeOctave > 60) {
     //     Split[Global.currentPerSplit].transposeOctave = 60;
     // }
+}
+
+void drawNoteGrid() {
+  // Draw right border
+  for (int row = 0; row <= 4; row++) {
+    int col = 5;
+    setLed(col, row, COLOR_WHITE, cellOn);
+  }
+  // Draw top border
+  for (int col = 4; col >= 1; col--) {
+    int row = 4;
+    setLed(col, row, COLOR_WHITE, cellOn);
+  }
+  // Draw left border
+  for (int row = 3; row >= 0; row--) {
+    int col = 1;
+    setLed(col, row, COLOR_WHITE, cellOn);
+  }
+  // Draw notes
+  for (byte row = 0; row <= 3; ++row) {
+    for (byte col = 2; col <= 4; ++col) {
+      byte note = noteAtCell(col, row);
+      byte noteColor = Global.paletteColors[Global.activePalette][note];
+      boolean isNoteRootColor = scaleGetAssignedColorOffset() == note;
+      // byte mode = scaleGetAssignedMode();
+
+      // if (scaleContainsNote(note)) {
+      //   if (note == mode) {
+          setLed(col, row, noteColor, isNoteRootColor ? cellSlowPulse : cellOn);
+      //   } else {
+      //     setLed(col, row, COLOR_OFF, cellOff);
+      //   }
+      // }
+    }
+  }
 }

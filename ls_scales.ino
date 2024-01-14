@@ -1,4 +1,4 @@
-static byte noteAtCell(byte col, byte row) {
+byte noteAtCell(byte col, byte row) {
   if (!(col >= 2 && col <= 4 && row >= 0 && row <= 3)) {
     return -1;
   }
@@ -13,7 +13,11 @@ static void scaleToggleNote(byte scaleId, byte note) {
   *scale ^= 1 << note;
 }
 
-static boolean scaleContainsNote(byte scaleId, byte note) {
+inline boolean scaleContainsNote(byte note) {
+  return scaleContainsNote(Global.activeNotes, note);
+}
+
+boolean scaleContainsNote(byte scaleId, byte note) {
   if (scaleId > 11 || note > 11) {
     return false;
   }
@@ -49,7 +53,11 @@ byte scaleGetEffectiveColorOffset(byte paletteId) {
   }
 }
 
-static byte scaleGetAssignedMode(byte scaleId) {
+inline byte scaleGetAssignedMode() {
+  return scaleGetAssignedMode(Global.activeNotes);
+}
+
+byte scaleGetAssignedMode(byte scaleId) {
   if (scaleId > 11) {
     return 0;
   }
