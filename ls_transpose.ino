@@ -36,7 +36,7 @@ void transpose2PaintOctaveTransposeDisplay() {
   blinkAllRootNotes = true;
   paintNormalDisplay();
   if (isDragging && isDraggingFromRoot) {
-    setLed(dragFromCol, dragFromRow, COLOR_RED, cellOn); // scaleGetEffectiveNoteColor(dragFromNote)
+    setLed(dragFromCol, dragFromRow, COLOR_WHITE, cellOn); // scaleGetEffectiveNoteColor(dragFromNote)
   }
   blinkAllRootNotes = false;
   blinkNote = -1;
