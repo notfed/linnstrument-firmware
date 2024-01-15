@@ -672,7 +672,7 @@ void handleNonPlayingTouch() {
       break;
     case displayOctaveTranspose:
         if (isTranspose2Enabled()) {
-          transpose2HandleOctaveTransposeNewTouch();
+          handleTranspose2NewTouch();
         } else {
           handleOctaveTransposeNewTouch();
         }
@@ -1615,7 +1615,7 @@ boolean handleNonPlayingRelease() {
         break;
       case displayOctaveTranspose:
         if (isTranspose2Enabled()) {
-          transpose2HandleOctaveTransposeRelease();
+          handleTranspose2Release();
         } else {
           handleOctaveTransposeRelease();
         }

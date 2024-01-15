@@ -124,7 +124,7 @@ void updateDisplay() {
       break;
     case displayOctaveTranspose:
         if (isTranspose2Enabled()) {
-          transpose2PaintOctaveTransposeDisplay();
+          paintTranspose2Display();
         } else {
           paintOctaveTransposeDisplay(Global.currentPerSplit);
         }

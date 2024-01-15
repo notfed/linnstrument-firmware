@@ -42,7 +42,7 @@ static byte prevReleaseSensorRow = -2;
 // signed char transposePitch;             // transpose output midi notes. Range is -12 to +12
 // signed char transposeLights;            // transpose lights on display. Range is -12 to +12
 
-void transpose2PaintOctaveTransposeDisplay() {
+void paintTranspose2Display() {
   // Push commit state
   short prevCommittedColorOffset = getCommittedColorOffset();
   short prevCommittedPitchOffset = getCommittedPitchOffset();
@@ -73,7 +73,7 @@ static inline short dragOffset() {
   return dragDeltaCol + 5 * dragDeltaRow;
 }
 
-void transpose2HandleOctaveTransposeNewTouch() {
+void handleTranspose2NewTouch() {
   maybeTimeoutDrag();
 
   // Touched popup? Just change the popup layer and redraw.
@@ -123,7 +123,7 @@ void transpose2HandleOctaveTransposeNewTouch() {
   updateDisplay();
 }
 
-void transpose2HandleOctaveTransposeRelease() {
+void handleTranspose2Release() {
   // Released touch from popup? Ignore it.
   if (isDragging && sensorCol == 1 && sensorRow <= 4) {
     return;
