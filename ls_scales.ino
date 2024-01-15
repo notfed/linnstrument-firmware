@@ -64,14 +64,22 @@ byte scaleGetAssignedMode(byte scaleId) {
   return Global.scaleMode[scaleId] - 1;
 }
 
-static void scaleSetAssignedMode(byte scaleId, byte mode) {
+inline void scaleSetAssignedMode(byte mode) {
+  scaleSetAssignedMode(Global.activeNotes, mode);
+}
+
+void scaleSetAssignedMode(byte scaleId, byte mode) {
   if (scaleId > 11) {
     return;
   }
   Global.scaleMode[scaleId] = mode + 1;
 }
 
-static byte scaleGetEffectiveMode(byte scaleId) {
+inline byte scaleGetEffectiveMode() {
+  return scaleGetEffectiveMode(Global.activeNotes);
+}
+
+byte scaleGetEffectiveMode(byte scaleId) {
   if (scaleId > 11) {
     return 0;
   }

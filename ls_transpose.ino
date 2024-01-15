@@ -5,18 +5,18 @@
 boolean isTranspose2Enabled() { return true; }
 
 enum Layer {
-  layerMove   = 0b000001,
   layerOctave = 0b000010,
   layerPitch  = 0b000100,
   layerColor  = 0b001000,
   layerMode   = 0b010000,
+  layerMove   = 0b000001,
   layerScale  = 0b100000,
 };
 
 static short curNumCellsTouched = 0;
 
 static byte previewNote = 0;
-static boolean isDraggingFromRoot = false;
+// static boolean isDraggingFromRoot = false;
 static boolean isDragging = false;
 static Layer dragLayer = layerColor;
 static unsigned long dragUpdateTime = 0;
@@ -26,6 +26,7 @@ static short dragFromRow = 0;
 static short uncommittedMoveOffset = 0;
 static short uncommittedPitchOffset = 0;
 static short uncommittedColorOffset = 0;
+static short uncommittedMode = 0;
 static short dragToCol = 0;
 static short dragToRow = 0;
 static short dragDeltaCol = 0;
@@ -43,13 +44,15 @@ void transpose2Reset() {
 
 void paintTranspose2Display() {
   // Push commit state
-  short prevCommittedColorOffset = getCommittedColorOffset();
   short prevCommittedPitchOffset = getCommittedPitchOffset();
+  short prevCommittedColorOffset = getCommittedColorOffset();
+  short prevCommittedMode = getCommittedMode();
   short prevCommittedMoveOffset = getCommittedMoveOffset();
 
   // Preview commit
-  commitColorOffset(uncommittedColorOffset);
   commitPitchOffset(uncommittedPitchOffset);
+  commitColorOffset(uncommittedColorOffset);
+  commitMode(uncommittedMode);
   commitMoveOffset(uncommittedMoveOffset);
   
   // Draw main screen
@@ -61,8 +64,9 @@ void paintTranspose2Display() {
   drawPopup();
 
   // Pop commit state
-  commitColorOffset(prevCommittedColorOffset);
   commitPitchOffset(prevCommittedPitchOffset);
+  commitColorOffset(prevCommittedColorOffset);
+  commitMode(prevCommittedMode);
   commitMoveOffset(prevCommittedMoveOffset);
 }
 
@@ -82,11 +86,14 @@ void handleTranspose2NewTouch() {
     } else if (sensorRow == 2) {
       dragLayer = layerColor;
     } else if (sensorRow == 1) {
-      // dragLayer = layerMode;
+      dragLayer = layerMode;
     } else if (sensorRow == 0) {
-      // dragLayer = layerMove;
+      dragLayer = layerMove;
     }
     updateDisplay();
+    return;
+  }
+  if (sensorCol <= 5 && sensorRow <= 4) {
     return;
   }
 
@@ -100,16 +107,18 @@ void handleTranspose2NewTouch() {
     dragUpdate();
   }
 
-  if (isDraggingFromRoot && (dragLayer == layerOctave || dragLayer == layerPitch)) {
-    midiChannel = takeChannel(Global.currentPerSplit, sensorRow);
+  if (dragLayer == layerOctave || dragLayer == layerPitch) {
+    midiChannel = takeChannel(Global.currentPerSplit, sensorRow); // TODO: Handle channel better
     previewNote = transposedNote(Global.currentPerSplit, sensorCol, sensorRow);
     midiSendNoteOff(Global.currentPerSplit, previewNote, midiChannel);
     midiSendNoteOn(Global.currentPerSplit, previewNote, 96, midiChannel);
 
     uncommittedPitchOffset = getCommittedPitchOffset() + dragOffset();
-  } else if (isDraggingFromRoot && dragLayer == layerColor) {
-    uncommittedColorOffset = mod(getCommittedColorOffset() + dragOffset(), 12);
-  } else if (!isDraggingFromRoot){
+  } else if (dragLayer == layerColor) {
+    uncommittedColorOffset = mod(getCommittedColorOffset() - dragOffset(), 12);
+  } else if (dragLayer == layerMode) {
+    uncommittedMode = mod(getCommittedMode() - dragOffset(), 12);
+  } else if (dragLayer == layerMove) {
     uncommittedMoveOffset = getCommittedMoveOffset() + dragOffset();
   }
 
@@ -118,7 +127,7 @@ void handleTranspose2NewTouch() {
 
 void handleTranspose2Release() {
   // Released touch from popup? Ignore it.
-  if (isDragging && sensorCol == 1 && sensorRow <= 4) {
+  if (!isDragging) {
     return;
   }
 
@@ -164,14 +173,16 @@ static void dragStop() {
     return;
   }
   isDragging = false;
-  if (isDraggingFromRoot && (dragLayer == layerOctave || dragLayer == layerPitch)) {
+  if (dragLayer == layerOctave || dragLayer == layerPitch) {
     midiSendNoteOff(Global.currentPerSplit, previewNote, midiChannel);
     releaseChannel(Global.currentPerSplit, midiChannel);
 
     commitPitchOffset(uncommittedPitchOffset);
-  } else if (isDraggingFromRoot && dragLayer == layerColor) {
+  } else if (dragLayer == layerColor) {
     commitColorOffset(uncommittedColorOffset);
-  } else if (!isDraggingFromRoot) {
+  } else if (dragLayer == layerMode) {
+    commitMode(uncommittedMode);
+  } else if (dragLayer == layerMove) {
     commitMoveOffset(uncommittedMoveOffset);
   }
 }
@@ -181,10 +192,11 @@ static void dragStart() {
   dragFromCol = sensorCol;
   dragFromRow = sensorRow;
   dragFromNote = getPitch(sensorCol, sensorRow);
-  isDraggingFromRoot = (dragFromNote % 12) == 0;
-  uncommittedMoveOffset = getCommittedMoveOffset();
+  // isDraggingFromRoot = (dragFromNote % 12) == 0;
   uncommittedPitchOffset = getCommittedPitchOffset();
   uncommittedColorOffset = getCommittedColorOffset();
+  uncommittedMode = getCommittedMode();
+  uncommittedMoveOffset = getCommittedMoveOffset();
   dragUpdate();
 }
 
@@ -196,7 +208,7 @@ static void dragUpdate() {
   dragDeltaRow = sensorRow - dragFromRow;
 }
 
-void drawPopup() {
+static void drawPopup() {
   // Draw right border
   for (int row = 0; row <= 4; row++) {
     int col = 5;
@@ -217,6 +229,8 @@ void drawPopup() {
     } else if (row == 2 && dragLayer == layerColor) {
       setLed(col, row, COLOR_WHITE, cellFastPulse);
     } else if (row == 1 && dragLayer == layerMode) {
+      setLed(col, row, COLOR_WHITE, cellFastPulse);
+    } else if (row == 0 && dragLayer == layerMove) {
       setLed(col, row, COLOR_WHITE, cellFastPulse);
     } else {
       setLed(col, row, COLOR_WHITE, cellOn);
@@ -269,6 +283,15 @@ static short getCommittedColorOffset() {
 
 static inline void commitColorOffset(short colorOffset) {
   scaleSetAssignedColorOffset(mod(colorOffset, 12));
+}
+
+static inline short getCommittedMode() {
+  // TODO: Deal with unassigned scenario
+  return scaleGetEffectiveMode();
+}
+
+static inline void commitMode(short mode) {
+  scaleSetAssignedMode(mod(mode, 12));
 }
 
 static inline short getCommittedMoveOffset() {
