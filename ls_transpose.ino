@@ -236,7 +236,7 @@ void drawPopup() {
   // Draw notes
   for (byte row = 0; row <= 3; ++row) {
     for (byte col = 2; col <= 4; ++col) {
-      byte curNote = noteAtCell(col, row);
+      byte curNote = mod(noteAtCell(col, row) + getCommittedPitchOffset(), 12);
       // byte curNoteColor = Global.paletteColors[Global.activePalette][curNote];
       byte curNoteColor = scaleGetEffectiveNoteColor(curNote);
       boolean curNoteColorIsRoot = scaleGetEffectiveColorOffset() == curNote;
