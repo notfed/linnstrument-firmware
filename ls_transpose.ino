@@ -18,8 +18,7 @@ short curNumCellsTouched = 0;
 byte previewNote = 0;
 boolean isDraggingFromRoot = false;
 boolean isDragging = false;
-Layer popupLayer = layerColor;
-Layer dragLayer = layerAll;
+Layer dragLayer = layerColor;
 unsigned long dragUpdateTime = 0;
 unsigned long lastReleaseAllTime = 0;
 short dragFromCol = 0;
@@ -44,13 +43,29 @@ byte prevReleaseSensorRow = -2;
 // signed char transposeLights;            // transpose lights on display. Range is -12 to +12
 
 void transpose2PaintOctaveTransposeDisplay() {
+  // Maybe preview color offset
+  byte actualAssignedColorOffset = scaleGetAssignedColorOffset();
+  if (isDragging && isDraggingFromRoot && dragLayer == layerColor) {
+    byte previewAssignedColorOffset = mod(paletteColorOffsetAtDragStart + dragOffset(), 12);
+    scaleSetAssignedColorOffset(previewAssignedColorOffset);
+  }
+
+  // Draw main screen
   blinkAllRootNotes = true;
   paintNormalDisplay();
   blinkAllRootNotes = false;
+
+  // ???
   blinkNote = -1; // TODO: Do we use this?
+
+  // Draw popup
   if (isDragging) {
-    // setLed(dragFromCol, dragFromRow, COLOR_WHITE, cellOn); // scaleGetEffectiveNoteColor(dragFromNote)
     drawPopup();
+  }
+
+  // Restore color offset
+  if (isDragging && isDraggingFromRoot && dragLayer == layerColor) {
+    scaleSetAssignedColorOffset(actualAssignedColorOffset);
   }
 }
 
@@ -62,26 +77,24 @@ void transpose2HandleOctaveTransposeNewTouch() {
   maybeTimeoutDrag();
 
   // Touched popup? Just change the popup layer and redraw.
-  if (isDragging && sensorCol == 1 && sensorRow >= 0 && sensorRow <= 4) {
+  if (isDragging && sensorCol == 1 && sensorRow <= 4) {
     if (sensorRow == 4) {
-      popupLayer = layerOctave;
+      dragLayer = layerOctave;
     } else if (sensorRow == 3) {
-      popupLayer = layerPitch;
+      dragLayer = layerPitch;
     } else if (sensorRow == 2) {
-      popupLayer = layerColor;
+      dragLayer = layerColor;
     } else if (sensorRow == 1) {
-      popupLayer = layerMode;
+      dragLayer = layerMode;
     } else if (sensorRow == 0) {
-      popupLayer = layerAll;
+      dragLayer = layerAll;
     }
     updateDisplay();
     return;
   }
 
   // Otherwise, handle dragging
-
   curNumCellsTouched++; 
-  // colorLastCellTouched();
 
   if (!isDragging) {
     dragStart();
@@ -89,16 +102,17 @@ void transpose2HandleOctaveTransposeNewTouch() {
     dragUpdate();
   }
 
-  if (dragLayer == layerColor) {
-    scaleSetAssignedColorOffset(mod(paletteColorOffsetAtDragStart + dragOffset(), 12));
-  } else if (dragLayer == layerOctave || dragLayer == layerPitch) {
+  if (isDraggingFromRoot && dragLayer == layerColor) {
+    // scaleSetAssignedColorOffset(mod(paletteColorOffsetAtDragStart + dragOffset(), 12));
+  } else if (isDraggingFromRoot && (dragLayer == layerOctave || dragLayer == layerPitch)) {
     midiChannel = takeChannel(Global.currentPerSplit, sensorRow); //takeChannel(Global.currentPerSplit, sensorRow);
     previewNote = transposedNote(Global.currentPerSplit, sensorCol, sensorRow);
     midiSendNoteOff(Global.currentPerSplit, previewNote, midiChannel);
     midiSendNoteOn(Global.currentPerSplit, previewNote, 96, midiChannel);
-  } else if (dragLayer == layerAll){
+  } else if (!isDraggingFromRoot){
     Split[Global.currentPerSplit].transposeLights =
       transposeLightsAtDragStart + dragOffset();
+    setLed(25, 0, COLOR_BLUE, cellOn); // DEBUG. REMOVE!
   }
   // normalizeTranspose();
 
@@ -111,7 +125,7 @@ void transpose2HandleOctaveTransposeNewTouch() {
 
 void transpose2HandleOctaveTransposeRelease() {
   // Released touch from popup? Don't treat it like other releases.
-  if (sensorCol == 1 && sensorRow >= 0 && sensorRow <= 4) {
+  if (isDragging && sensorCol == 1 && sensorRow <= 4) {
     return;
   }
 
@@ -148,11 +162,13 @@ static void dragStop() {
     return;
   }
   isDragging = false;
-  if (dragLayer == layerPitch) {
+  if (isDraggingFromRoot && dragLayer == layerPitch) {
     midiSendNoteOff(Global.currentPerSplit, previewNote, midiChannel);
     releaseChannel(Global.currentPerSplit, midiChannel);
     Split[Global.currentPerSplit].transposePitch =
       transposePitchAtDragStart + dragOffset();
+  } else if (isDraggingFromRoot && dragLayer == layerColor) {
+    scaleSetAssignedColorOffset(mod(paletteColorOffsetAtDragStart + dragOffset(), 12));
   }
 }
 
@@ -162,20 +178,20 @@ static void dragStart() {
   dragFromRow = sensorRow;
   dragFromNote = getPitch(sensorCol, sensorRow);
   isDraggingFromRoot = (dragFromNote % 12) == 0;
-  if (isDraggingFromRoot) {
+  // if (isDraggingFromRoot) {
     // blinkMiddleRootNote = true;
     // paintNormalDisplay();
     // setLed(sensorCol, sensorRow, COLOR_RED, cellFastPulse); // scaleGetEffectiveNoteColor(dragFromNote)
     // blinkMiddleRootNote = false;
-  }
+  // }
   transposePitchAtDragStart = Split[Global.currentPerSplit].transposePitch;
   transposeLightsAtDragStart = Split[Global.currentPerSplit].transposeLights;
   paletteColorOffsetAtDragStart = ((short)scaleGetEffectiveColorOffset());
-  if (isDraggingFromRoot) {
-    dragLayer = layerColor;
-  } else {
-    dragLayer = layerAll;
-  }
+  // if (isDraggingFromRoot) {
+  //   dragLayer = layerColor;
+  // } else {
+  //   dragLayer = layerAll;
+  // }
   dragUpdate();
 }
 
@@ -245,13 +261,13 @@ void drawPopup() {
   // Draw left border
   for (int row = 4; row >= 0; row--) {
     int col = 1;
-    if (row == 4 && popupLayer == layerOctave) {
+    if (row == 4 && dragLayer == layerOctave) {
       setLed(col, row, COLOR_WHITE, cellFastPulse);
-    } else if (row == 3 && popupLayer == layerPitch) {
+    } else if (row == 3 && dragLayer == layerPitch) {
       setLed(col, row, COLOR_WHITE, cellFastPulse);
-    } else if (row == 2 && popupLayer == layerColor) {
+    } else if (row == 2 && dragLayer == layerColor) {
       setLed(col, row, COLOR_WHITE, cellFastPulse);
-    } else if (row == 1 && popupLayer == layerMode) {
+    } else if (row == 1 && dragLayer == layerMode) {
       setLed(col, row, COLOR_WHITE, cellFastPulse);
     } else {
       setLed(col, row, COLOR_WHITE, cellOn);
@@ -265,11 +281,11 @@ void drawPopup() {
       boolean curNoteColorIsRoot = scaleGetAssignedColorOffset() == curNote;
       // byte mode = scaleGetAssignedMode();
 
-      // if (popupLayer == layerOctave) {
+      // if (dragLayer == layerOctave) {
       //     setLed(col, row, COLOR_OFF, cellOff);
-      // } else if (popupLayer == layerPitch) {
+      // } else if (dragLayer == layerPitch) {
       //     setLed(col, row, COLOR_OFF, cellOff);
-      // } else if (popupLayer == layerColor) {
+      // } else if (dragLayer == layerColor) {
       //     setLed(col, row, curNoteColor, curNoteColorIsRoot ? cellSlowPulse : cellOn);
       // } else {
         if (scaleContainsNote(curNote)) {
