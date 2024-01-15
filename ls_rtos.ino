@@ -78,7 +78,9 @@ inline void performContinuousTasks(unsigned long nowMicros) {
   static boolean continuousDragTimeout = false;
   if (!continuousDragTimeout) {
     continuousDragTimeout = true;
-    maybeTimeoutDrag();
+    if (maybeTimeoutDrag()) {
+      updateDisplay();
+    }
     continuousDragTimeout = false;
   }
 
