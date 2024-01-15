@@ -33,11 +33,6 @@ static short dragDeltaRow = 0;
 static byte dragFromNote = 0;
 static byte midiChannel = 0;
 
-static byte prevTouchSensorCol = -2;
-static byte prevTouchSensorRow = -2;
-static byte prevReleaseSensorCol = -2;
-static byte prevReleaseSensorRow = -2;
-
 // signed char transposeOctave;            // -60, -48, -36, -24, -12, 0, +12, +24, +36, +48, +60
 // signed char transposePitch;             // transpose output midi notes. Range is -12 to +12
 // signed char transposeLights;            // transpose lights on display. Range is -12 to +12
@@ -118,10 +113,6 @@ void handleTranspose2NewTouch() {
     uncommittedMoveOffset = getCommittedMoveOffset() + dragOffset();
   }
 
-  // Save cell for next event
-  prevTouchSensorCol = sensorCol;
-  prevTouchSensorRow = sensorRow;
-
   updateDisplay();
 }
 
@@ -138,10 +129,6 @@ void handleTranspose2Release() {
   }
 
   // We'll respond to the release asynchronously in maybeTimeoutDrag 
-
-  // Save cell for next event
-  prevReleaseSensorCol = sensorCol;
-  prevReleaseSensorRow = sensorRow;
 }
 
 static short mod(short a, short b) {
