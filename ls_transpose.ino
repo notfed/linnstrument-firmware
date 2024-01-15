@@ -5,12 +5,12 @@
 boolean isTranspose2Enabled() { return true; }
 
 enum Layer {
-  layerAll    = 0b01110,
-  layerOctave = 0b00001,
-  layerPitch  = 0b00010,
-  layerColor  = 0b00100,
-  layerMode   = 0b01000,
-  layerScale  = 0b10000,
+  layerMove   = 0b000001,
+  layerOctave = 0b000010,
+  layerPitch  = 0b000100,
+  layerColor  = 0b001000,
+  layerMode   = 0b010000,
+  layerScale  = 0b100000,
 };
 
 static short curNumCellsTouched = 0;
@@ -59,9 +59,7 @@ void paintTranspose2Display() {
   blinkAllRootNotes = false;
 
   // Draw popup
-  if (isDragging) {
-    drawPopup();
-  }
+  drawPopup();
 
   // Pop commit state
   commitColorOffset(prevCommittedColorOffset);
@@ -77,7 +75,7 @@ void handleTranspose2NewTouch() {
   maybeTimeoutDrag();
 
   // Touched popup? Just change the popup layer and redraw.
-  if (isDragging && sensorCol == 1 && sensorRow <= 4) {
+  if (sensorCol == 1 && sensorRow <= 4) {
     if (sensorRow == 4) {
       dragLayer = layerOctave;
     } else if (sensorRow == 3) {
@@ -85,9 +83,9 @@ void handleTranspose2NewTouch() {
     } else if (sensorRow == 2) {
       dragLayer = layerColor;
     } else if (sensorRow == 1) {
-      dragLayer = layerMode;
+      // dragLayer = layerMode;
     } else if (sensorRow == 0) {
-      dragLayer = layerAll;
+      // dragLayer = layerMove;
     }
     updateDisplay();
     return;
