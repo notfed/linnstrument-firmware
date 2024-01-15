@@ -13,60 +13,60 @@ enum Layer {
   layerScale  = 0b10000,
 };
 
-short curNumCellsTouched = 0;
+static short curNumCellsTouched = 0;
 
-byte previewNote = 0;
-boolean isDraggingFromRoot = false;
-boolean isDragging = false;
-Layer dragLayer = layerColor;
-unsigned long dragUpdateTime = 0;
-unsigned long lastReleaseAllTime = 0;
-short dragFromCol = 0;
-short dragFromRow = 0;
-short transposePitchAtDragStart = 0;
-short transposeLightsAtDragStart = 0;
-short paletteColorOffsetAtDragStart = 0;
-short dragToCol = 0;
-short dragToRow = 0;
-short dragDeltaCol = 0;
-short dragDeltaRow = 0;
-byte dragFromNote = 0;
-byte midiChannel = 0;
+static byte previewNote = 0;
+static boolean isDraggingFromRoot = false;
+static boolean isDragging = false;
+static Layer dragLayer = layerColor;
+static unsigned long dragUpdateTime = 0;
+static unsigned long lastReleaseAllTime = 0;
+static short dragFromCol = 0;
+static short dragFromRow = 0;
+static short uncommittedMoveOffset = 0;
+static short uncommittedPitchOffset = 0;
+static short uncommittedColorOffset = 0;
+static short dragToCol = 0;
+static short dragToRow = 0;
+static short dragDeltaCol = 0;
+static short dragDeltaRow = 0;
+static byte dragFromNote = 0;
+static byte midiChannel = 0;
 
-byte prevTouchSensorCol = -2;
-byte prevTouchSensorRow = -2;
-byte prevReleaseSensorCol = -2;
-byte prevReleaseSensorRow = -2;
+static byte prevTouchSensorCol = -2;
+static byte prevTouchSensorRow = -2;
+static byte prevReleaseSensorCol = -2;
+static byte prevReleaseSensorRow = -2;
 
 // signed char transposeOctave;            // -60, -48, -36, -24, -12, 0, +12, +24, +36, +48, +60
 // signed char transposePitch;             // transpose output midi notes. Range is -12 to +12
 // signed char transposeLights;            // transpose lights on display. Range is -12 to +12
 
 void transpose2PaintOctaveTransposeDisplay() {
-  // Maybe preview color offset
-  byte actualAssignedColorOffset = scaleGetAssignedColorOffset();
-  if (isDragging && isDraggingFromRoot && dragLayer == layerColor) {
-    byte previewAssignedColorOffset = mod(paletteColorOffsetAtDragStart + dragOffset(), 12);
-    scaleSetAssignedColorOffset(previewAssignedColorOffset);
-  }
+  // Push commit state
+  short prevCommittedColorOffset = getCommittedColorOffset();
+  short prevCommittedPitchOffset = getCommittedPitchOffset();
+  short prevCommittedMoveOffset = getCommittedMoveOffset();
 
+  // Preview commit
+  commitColorOffset(uncommittedColorOffset);
+  commitPitchOffset(uncommittedPitchOffset);
+  commitMoveOffset(uncommittedMoveOffset);
+  
   // Draw main screen
   blinkAllRootNotes = true;
   paintNormalDisplay();
   blinkAllRootNotes = false;
-
-  // ???
-  blinkNote = -1; // TODO: Do we use this?
 
   // Draw popup
   if (isDragging) {
     drawPopup();
   }
 
-  // Restore color offset
-  if (isDragging && isDraggingFromRoot && dragLayer == layerColor) {
-    scaleSetAssignedColorOffset(actualAssignedColorOffset);
-  }
+  // Pop commit state
+  commitColorOffset(prevCommittedColorOffset);
+  commitPitchOffset(prevCommittedPitchOffset);
+  commitMoveOffset(prevCommittedMoveOffset);
 }
 
 static inline short dragOffset() {
@@ -93,28 +93,28 @@ void transpose2HandleOctaveTransposeNewTouch() {
     return;
   }
 
-  // Otherwise, handle dragging
+  // Touched main area. Count the touch.
   curNumCellsTouched++; 
 
+  // Handle this as a drag event
   if (!isDragging) {
     dragStart();
   } else {
     dragUpdate();
   }
 
-  if (isDraggingFromRoot && dragLayer == layerColor) {
-    // scaleSetAssignedColorOffset(mod(paletteColorOffsetAtDragStart + dragOffset(), 12));
-  } else if (isDraggingFromRoot && (dragLayer == layerOctave || dragLayer == layerPitch)) {
-    midiChannel = takeChannel(Global.currentPerSplit, sensorRow); //takeChannel(Global.currentPerSplit, sensorRow);
+  if (isDraggingFromRoot && (dragLayer == layerOctave || dragLayer == layerPitch)) {
+    midiChannel = takeChannel(Global.currentPerSplit, sensorRow);
     previewNote = transposedNote(Global.currentPerSplit, sensorCol, sensorRow);
     midiSendNoteOff(Global.currentPerSplit, previewNote, midiChannel);
     midiSendNoteOn(Global.currentPerSplit, previewNote, 96, midiChannel);
+
+    uncommittedPitchOffset = getCommittedPitchOffset() + dragOffset();
+  } else if (isDraggingFromRoot && dragLayer == layerColor) {
+    uncommittedColorOffset = mod(getCommittedColorOffset() + dragOffset(), 12);
   } else if (!isDraggingFromRoot){
-    Split[Global.currentPerSplit].transposeLights =
-      transposeLightsAtDragStart + dragOffset();
-    setLed(25, 0, COLOR_BLUE, cellOn); // DEBUG. REMOVE!
+    uncommittedMoveOffset = getCommittedMoveOffset() + dragOffset();
   }
-  // normalizeTranspose();
 
   // Save cell for next event
   prevTouchSensorCol = sensorCol;
@@ -124,16 +124,18 @@ void transpose2HandleOctaveTransposeNewTouch() {
 }
 
 void transpose2HandleOctaveTransposeRelease() {
-  // Released touch from popup? Don't treat it like other releases.
+  // Released touch from popup? Ignore it.
   if (isDragging && sensorCol == 1 && sensorRow <= 4) {
     return;
   }
 
+  // Otherwise, count the release
   curNumCellsTouched--;
-
   if (curNumCellsTouched == 0) {
     lastReleaseAllTime = micros();
   }
+
+  // We'll respond to the release asynchronously in maybeTimeoutDrag 
 
   // Save cell for next event
   prevReleaseSensorCol = sensorCol;
@@ -148,13 +150,24 @@ const unsigned long DRAG_TIMEOUT_US = 50000;
 
 // This is called asynchronously, often. Return true if timeout occurred.
 boolean maybeTimeoutDrag() {
-  unsigned long now = micros();
-  if (isDragging && curNumCellsTouched == 0 &&
-      calcTimeDelta(now, lastReleaseAllTime) >= DRAG_TIMEOUT_US) {
-    dragStop();
-    return true;
+  // Prevent recursive runs
+  static boolean alreadyRunning = false;
+  if (alreadyRunning) {
+    return false;
   }
-  return false;
+  alreadyRunning = true;
+
+  // Detect if timed out
+  boolean timedOut = isDragging && curNumCellsTouched == 0 &&
+      calcTimeDelta(micros(), lastReleaseAllTime) >= DRAG_TIMEOUT_US;
+
+  // If timed out, we can now handle touch release
+  if (timedOut) {
+    dragStop();
+  }
+
+  alreadyRunning = false;
+  return timedOut;
 }
 
 static void dragStop() {
@@ -162,13 +175,15 @@ static void dragStop() {
     return;
   }
   isDragging = false;
-  if (isDraggingFromRoot && dragLayer == layerPitch) {
+  if (isDraggingFromRoot && (dragLayer == layerOctave || dragLayer == layerPitch)) {
     midiSendNoteOff(Global.currentPerSplit, previewNote, midiChannel);
     releaseChannel(Global.currentPerSplit, midiChannel);
-    Split[Global.currentPerSplit].transposePitch =
-      transposePitchAtDragStart + dragOffset();
+
+    commitPitchOffset(uncommittedPitchOffset);
   } else if (isDraggingFromRoot && dragLayer == layerColor) {
-    scaleSetAssignedColorOffset(mod(paletteColorOffsetAtDragStart + dragOffset(), 12));
+    commitColorOffset(uncommittedColorOffset);
+  } else if (!isDraggingFromRoot) {
+    commitMoveOffset(uncommittedMoveOffset);
   }
 }
 
@@ -178,20 +193,9 @@ static void dragStart() {
   dragFromRow = sensorRow;
   dragFromNote = getPitch(sensorCol, sensorRow);
   isDraggingFromRoot = (dragFromNote % 12) == 0;
-  // if (isDraggingFromRoot) {
-    // blinkMiddleRootNote = true;
-    // paintNormalDisplay();
-    // setLed(sensorCol, sensorRow, COLOR_RED, cellFastPulse); // scaleGetEffectiveNoteColor(dragFromNote)
-    // blinkMiddleRootNote = false;
-  // }
-  transposePitchAtDragStart = Split[Global.currentPerSplit].transposePitch;
-  transposeLightsAtDragStart = Split[Global.currentPerSplit].transposeLights;
-  paletteColorOffsetAtDragStart = ((short)scaleGetEffectiveColorOffset());
-  // if (isDraggingFromRoot) {
-  //   dragLayer = layerColor;
-  // } else {
-  //   dragLayer = layerAll;
-  // }
+  uncommittedMoveOffset = getCommittedMoveOffset();
+  uncommittedPitchOffset = getCommittedPitchOffset();
+  uncommittedColorOffset = getCommittedColorOffset();
   dragUpdate();
 }
 
@@ -201,50 +205,6 @@ static void dragUpdate() {
   dragToRow = sensorRow;
   dragDeltaCol = sensorCol - dragFromCol;
   dragDeltaRow = sensorRow - dragFromRow;
-}
-
-static byte getPitch(byte col, byte row) {
-  short displayedNote = getNoteNumber(Global.currentPerSplit, col, row) +
-    Split[Global.currentPerSplit].transposeOctave;
-  return displayedNote;
-}
-
-void colorLastCellTouched() {
-  // switch (curNumCellsTouched) {
-  //   case 0:
-  //       setLed(sensorCol, sensorRow, COLOR_BLACK, cellOff);
-  //       break;
-  //   case 1:
-  //       setLed(sensorCol, sensorRow, COLOR_ORANGE, cellOn);
-  //       break;
-  //   case 2:
-  //       setLed(sensorCol, sensorRow, COLOR_GREEN, cellOn);
-  //       break;
-  //   case 3:
-  //       setLed(sensorCol, sensorRow, COLOR_BLUE, cellOn);
-  //       break;
-  //   default:
-  //       setLed(sensorCol, sensorRow, COLOR_VIOLET, cellOn);
-  //       break;
-  // }
-}
-
-void normalizeTranspose() {
-    // if (Split[Global.currentPerSplit].transposePitch == -12) {
-    //     Split[Global.currentPerSplit].transposePitch = 0;
-    //     Split[Global.currentPerSplit].transposeOctave -= 12;
-    // }
-    // if (Split[Global.currentPerSplit].transposePitch == 12) {
-    //     Split[Global.currentPerSplit].transposePitch = 0;
-    //     Split[Global.currentPerSplit].transposeOctave += 12;
-    // }
-    // Split[Global.currentPerSplit].transposeLights = mod(Split[Global.currentPerSplit].transposeLights, 12);
-    // if (Split[Global.currentPerSplit].transposeOctave < -60) {
-    //     Split[Global.currentPerSplit].transposeOctave = -60;
-    // }
-    // if (Split[Global.currentPerSplit].transposeOctave > 60) {
-    //     Split[Global.currentPerSplit].transposeOctave = 60;
-    // }
 }
 
 void drawPopup() {
@@ -277,8 +237,9 @@ void drawPopup() {
   for (byte row = 0; row <= 3; ++row) {
     for (byte col = 2; col <= 4; ++col) {
       byte curNote = noteAtCell(col, row);
-      byte curNoteColor = Global.paletteColors[Global.activePalette][curNote];
-      boolean curNoteColorIsRoot = scaleGetAssignedColorOffset() == curNote;
+      // byte curNoteColor = Global.paletteColors[Global.activePalette][curNote];
+      byte curNoteColor = scaleGetEffectiveNoteColor(curNote);
+      boolean curNoteColorIsRoot = scaleGetEffectiveColorOffset() == curNote;
       // byte mode = scaleGetAssignedMode();
 
       // if (dragLayer == layerOctave) {
@@ -296,4 +257,35 @@ void drawPopup() {
       // }
     }
   }
+}
+
+static byte getPitch(byte col, byte row) {
+  short displayedNote = getNoteNumber(Global.currentPerSplit, col, row) +
+    Split[Global.currentPerSplit].transposeOctave;
+  return displayedNote;
+}
+
+static short getCommittedPitchOffset() {
+  return Split[Global.currentPerSplit].transposePitch;
+}
+
+static void commitPitchOffset(short pitchOffset) {
+  Split[Global.currentPerSplit].transposePitch = pitchOffset;
+}
+
+static short getCommittedColorOffset() {
+  // TODO: Deal with unassigned scenario
+  return ((short)scaleGetEffectiveColorOffset());
+}
+
+static inline void commitColorOffset(short colorOffset) {
+  scaleSetAssignedColorOffset(mod(colorOffset, 12));
+}
+
+static inline short getCommittedMoveOffset() {
+  return Split[Global.currentPerSplit].transposeLights;
+}
+
+static inline void commitMoveOffset(short moveOffset) {
+  Split[Global.currentPerSplit].transposeLights = moveOffset;
 }

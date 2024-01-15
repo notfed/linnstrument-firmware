@@ -68,6 +68,7 @@ These routines handle the painting of these display modes on LinnStument's 208 L
 unsigned long displayModeStart = 0;   // indicates when the current display mode was activated
 boolean blinkMiddleRootNote = false;  // indicates whether the middle root note should be blinking
 boolean blinkAllRootNotes = false;    // indicates whether all root notes should be blinking
+// TODO: I added this, but we don't use it. Remove it
 short blinkNote = -1;                 // if non-negative, blink the specified note
 
 // changes the active display mode
