@@ -42,6 +42,10 @@ static byte prevReleaseSensorRow = -2;
 // signed char transposePitch;             // transpose output midi notes. Range is -12 to +12
 // signed char transposeLights;            // transpose lights on display. Range is -12 to +12
 
+void transpose2Reset() {
+  isDragging = false;
+}
+
 void paintTranspose2Display() {
   // Push commit state
   short prevCommittedColorOffset = getCommittedColorOffset();

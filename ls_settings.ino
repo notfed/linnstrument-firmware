@@ -896,6 +896,7 @@ void handleControlButtonNewTouch() {
       resetAllTouches();
       setLed(0, OCTAVE_ROW, globalColor, cellOn);
       setDisplayMode(displayOctaveTranspose);
+      transpose2Reset();
       updateDisplay();
       break;
 
