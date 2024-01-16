@@ -242,10 +242,18 @@ static void drawPopup() {
     for (byte col = 2; col <= 4; ++col) {
       byte curNote = mod(noteAtCell(col, row) + getCommittedPitchOffset(), 12);
       byte curNoteIsRoot = isRootNote(noteAtCell(col, row));
+      byte curNoteColor = scaleGetEffectiveNoteColor(curNote);
       boolean curNoteIsModeOffset = scaleGetEffectiveMode() == curNote;
+      boolean curCellIsOctave = ((getCommittedPitchOffset() + 60) / 12) == noteAtCell(col, row);
       // octave/pitch/color/move
-      if (scaleContainsNote(curNote)) {
-        setLed(col, row, scaleGetEffectiveNoteColor(curNote), curNoteIsRoot ? cellSlowPulse : cellOn);
+      if (dragLayer == layerOctave && curCellIsOctave) {
+        setLed(col, row, COLOR_WHITE, cellOn);
+      } else if (dragLayer == layerPitch && curNoteIsRoot && scaleContainsNote(curNote)) {
+        setLed(col, row, curNoteColor, curNoteIsRoot ? cellSlowPulse : cellOn);
+      } else if (dragLayer == layerMode && scaleContainsNote(curNote)) {
+        setLed(col, row, curNoteColor, curNoteIsModeOffset ? cellSlowPulse : cellOn);
+      } else if (dragLayer == layerMove && scaleContainsNote(curNote)) {
+        setLed(col, row, curNoteColor, curNoteIsRoot ? cellSlowPulse : cellOn);
       } else {
         setLed(col, row, COLOR_OFF, cellOff);
       }
