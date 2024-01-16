@@ -240,19 +240,24 @@ static void drawPopup() {
   // Show notes (1) only if in scale, (2) at correct pitch, (3) with correct color, and (4) with pulsing root
   for (byte row = 0; row <= 3; ++row) {
     for (byte col = 2; col <= 4; ++col) {
-      byte curNote = mod(noteAtCell(col, row) + getCommittedPitchOffset(), 12);
-      byte curNoteIsRoot = isRootNote(noteAtCell(col, row));
-      byte curNoteColor = scaleGetEffectiveNoteColor(curNote);
+      byte curNote = noteAtCell(col, row);
+      byte curPitch = mod(curNote + getCommittedPitchOffset(), 12);
+      byte curNoteIsRoot = isRootNote(curNote);
+      byte curPitchIsRoot = isRootNote(curPitch);
       boolean curNoteIsModeOffset = scaleGetEffectiveMode() == curNote;
-      boolean curCellIsOctave = ((getCommittedPitchOffset() + 60) / 12) == noteAtCell(col, row);
-      // octave/pitch/color/move
+      boolean curCellIsOctave = ((getCommittedPitchOffset() + 60) / 12) == curNote;
+      boolean curNoteIsInScale = scaleContainsNote(curNote);
+      byte curNoteColor = curNoteIsInScale ? scaleGetEffectiveNoteColor(curNote) : COLOR_WHITE;
+      
       if (dragLayer == layerOctave && curCellIsOctave) {
         setLed(col, row, COLOR_WHITE, cellOn);
-      } else if (dragLayer == layerPitch && curNoteIsRoot && scaleContainsNote(curNote)) {
+      } else if (dragLayer == layerColor && (curNoteIsRoot || curNoteIsInScale)) {
         setLed(col, row, curNoteColor, curNoteIsRoot ? cellSlowPulse : cellOn);
-      } else if (dragLayer == layerMode && scaleContainsNote(curNote)) {
+      } else if (dragLayer == layerPitch && (curPitchIsRoot || curNoteIsInScale)) {
+        setLed(col, row, curNoteColor, curPitchIsRoot ? cellSlowPulse : cellOn); // ?
+      } else if (dragLayer == layerMode && (curNoteIsModeOffset || curNoteIsInScale)) {
         setLed(col, row, curNoteColor, curNoteIsModeOffset ? cellSlowPulse : cellOn);
-      } else if (dragLayer == layerMove && scaleContainsNote(curNote)) {
+      } else if (dragLayer == layerMove && (curNoteIsRoot || curNoteIsInScale)) {
         setLed(col, row, curNoteColor, curNoteIsRoot ? cellSlowPulse : cellOn);
       } else {
         setLed(col, row, COLOR_OFF, cellOff);
@@ -260,6 +265,9 @@ static void drawPopup() {
     }
   }
 }
+
+// Thoughts:
+// - Seems we only need layers (1) move, (2) color, (3) mode
 
 static byte getPitch(byte col, byte row) {
   short displayedNote = getNoteNumber(Global.currentPerSplit, col, row) +
