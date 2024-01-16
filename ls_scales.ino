@@ -38,7 +38,7 @@ inline void scaleSetAssignedColorOffset(byte colorOffset) {
 }
 
 void scaleSetAssignedColorOffset(byte paletteId, byte colorOffset) {
-  Global.paletteColorOffset[paletteId] = (colorOffset + 1) % 12;
+  Global.paletteColorOffset[paletteId] = (colorOffset % 12) + 1;
 }
 
 inline byte scaleGetEffectiveColorOffset() {

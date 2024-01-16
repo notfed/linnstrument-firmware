@@ -530,8 +530,11 @@ void paintNormalDisplayCell(byte split, byte col, byte row) {
     } else if (isMainNote) {
       // use global per-note color
       colour = scaleGetEffectiveNoteColor(octaveNote);
-      boolean isDisplayedNoteRoot = octaveNote == 0; // TODO: Hardcoded to C for now?
-      if (blinkAllRootNotes && isDisplayedNoteRoot) {
+      // maybe blink the note
+      boolean isDisplayedNoteRoot = octaveNote == 0;
+      if (blinkAllRootNotes && displayedNote == 60) {
+        cellDisplay = cellOn;
+      } else if (blinkAllRootNotes && isDisplayedNoteRoot) {
         cellDisplay = cellFastPulse;
       } else if (blinkNote >= 0 && blinkNote <= 127 && actualnote == blinkNote) {
         cellDisplay = cellFastPulse;

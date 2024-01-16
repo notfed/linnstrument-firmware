@@ -237,27 +237,18 @@ static void drawPopup() {
     }
   }
   // Draw notes
+  // Show notes (1) only if in scale, (2) at correct pitch, (3) with correct color, and (4) with pulsing root
   for (byte row = 0; row <= 3; ++row) {
     for (byte col = 2; col <= 4; ++col) {
       byte curNote = mod(noteAtCell(col, row) + getCommittedPitchOffset(), 12);
-      // byte curNoteColor = Global.paletteColors[Global.activePalette][curNote];
-      byte curNoteColor = scaleGetEffectiveNoteColor(curNote);
-      boolean curNoteColorIsRoot = scaleGetEffectiveColorOffset() == curNote;
-      // byte mode = scaleGetAssignedMode();
-
-      // if (dragLayer == layerOctave) {
-      //     setLed(col, row, COLOR_OFF, cellOff);
-      // } else if (dragLayer == layerPitch) {
-      //     setLed(col, row, COLOR_OFF, cellOff);
-      // } else if (dragLayer == layerColor) {
-      //     setLed(col, row, curNoteColor, curNoteColorIsRoot ? cellSlowPulse : cellOn);
-      // } else {
-        if (scaleContainsNote(curNote)) {
-           setLed(col, row, curNoteColor, curNoteColorIsRoot ? cellSlowPulse : cellOn);
-        } else {
-           setLed(col, row, COLOR_OFF, cellOff);
-        }
-      // }
+      byte curNoteIsRoot = isRootNote(noteAtCell(col, row));
+      boolean curNoteIsModeOffset = scaleGetEffectiveMode() == curNote;
+      // octave/pitch/color/move
+      if (scaleContainsNote(curNote)) {
+        setLed(col, row, scaleGetEffectiveNoteColor(curNote), curNoteIsRoot ? cellSlowPulse : cellOn);
+      } else {
+        setLed(col, row, COLOR_OFF, cellOff);
+      }
     }
   }
 }
@@ -300,4 +291,8 @@ static inline short getCommittedMoveOffset() {
 
 static inline void commitMoveOffset(short moveOffset) {
   Split[Global.currentPerSplit].transposeLights = moveOffset;
+}
+
+static inline boolean isRootNote(short note) {
+  return mod(note + getCommittedPitchOffset(),  12) == 0;
 }
