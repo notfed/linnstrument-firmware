@@ -122,7 +122,13 @@ void handleTranspose2NewTouch() {
   } else if (dragLayer == layerColor) {
     uncommittedColorOffset = mod(getCommittedColorOffset() - dragOffset(), 12);
   } else if (dragLayer == layerMode) {
-    uncommittedMode = mod(getCommittedMode() - dragOffset(), 12);
+    byte maybeUncommittedMode = mod(getCommittedMode() - dragOffset(), 12);
+    byte rootNote = 0;
+    boolean isRootInScale =
+      scaleGetEffectiveScale(Global.activeNotes, maybeUncommittedMode) & (1 << rootNote);
+    if (isRootInScale) {
+      uncommittedMode = maybeUncommittedMode;
+    }
   } else if (dragLayer == layerMove) {
     uncommittedMoveOffset = getCommittedMoveOffset() + dragOffset();
   }
@@ -303,7 +309,7 @@ static inline short getCommittedMode() {
 }
 
 static inline void commitMode(short mode) {
-  scaleSetAssignedMode(mod(mode, 12));
+  scaleSetAssignedMode(mode);
 }
 
 static inline short getCommittedMoveOffset() {

@@ -46,11 +46,11 @@ inline byte scaleGetEffectiveColorOffset() {
 }
 
 byte scaleGetEffectiveColorOffset(byte paletteId) {
-  if (scaleGetAssignedColorOffset(paletteId) > 11) {
+  if (paletteId > 11) {
     return 0;
-  } else {
-    return scaleGetAssignedColorOffset(paletteId);
   }
+  byte assignedColorOffset = scaleGetAssignedColorOffset(paletteId);
+  return assignedColorOffset > 11 ? 0 : assignedColorOffset;
 }
 
 inline byte scaleGetAssignedMode() {
@@ -72,7 +72,7 @@ void scaleSetAssignedMode(byte scaleId, byte mode) {
   if (scaleId > 11) {
     return;
   }
-  Global.scaleMode[scaleId] = mode + 1;
+  Global.scaleMode[scaleId] = (mode % 12) + 1;
 }
 
 inline byte scaleGetEffectiveMode() {
@@ -83,11 +83,8 @@ byte scaleGetEffectiveMode(byte scaleId) {
   if (scaleId > 11) {
     return 0;
   }
-  if (scaleGetAssignedMode(scaleId) > 11) {
-    return 0;
-  } else {
-    return scaleGetAssignedMode(scaleId);
-  }
+  byte assignedMode = scaleGetAssignedMode(scaleId);
+  return assignedMode > 11 ? 0 : assignedMode;
 }
 
 static int rotateRight12(int x, int n) {
@@ -103,6 +100,10 @@ inline int scaleGetEffectiveScale() {
 
 int scaleGetEffectiveScale(byte scaleId) {
   byte mode = scaleGetEffectiveMode(scaleId);
+  return rotateRight12(Global.mainNotes[scaleId], mode);
+}
+
+int scaleGetEffectiveScale(byte scaleId, byte mode) {
   return rotateRight12(Global.mainNotes[scaleId], mode);
 }
 
