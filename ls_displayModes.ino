@@ -516,6 +516,7 @@ void paintNormalDisplayCell(byte split, byte col, byte row) {
       Split[split].colorMain != COLOR_OFF && Split[split].colorMain != COLOR_BLACK;
     boolean splitDefinesAccentColor =
       Split[split].colorAccent != COLOR_OFF && Split[split].colorAccent != COLOR_BLACK;
+    boolean isDisplayedNoteRoot = octaveNote == 0;
 
     // paint all cells to assigned per-note colors, overriding with per-split colors if set
     if (splitDefinesAccentColor && isAccentNote) {
@@ -531,7 +532,6 @@ void paintNormalDisplayCell(byte split, byte col, byte row) {
       // use global per-note color
       colour = scaleGetEffectiveNoteColor(octaveNote);
       // maybe blink the note
-      boolean isDisplayedNoteRoot = octaveNote == 0;
       if (blinkAllRootNotes && displayedNote == 60) {
         cellDisplay = cellOn;
       } else if (blinkAllRootNotes && isDisplayedNoteRoot) {
@@ -541,6 +541,9 @@ void paintNormalDisplayCell(byte split, byte col, byte row) {
       } else {
         cellDisplay = cellOn;
       }
+    } else if (isDisplayedNoteRoot) {
+      colour = COLOR_WHITE;
+      cellDisplay = cellFastPulse;
     }
   }
 
