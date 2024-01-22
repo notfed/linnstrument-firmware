@@ -43,6 +43,10 @@ void transpose2Reset() {
 }
 
 void paintTranspose2Display() {
+  // TODO: TEMPORARY: Hardcoding octave and pitch to 0 for now
+  Split[Global.currentPerSplit].transposePitch = 0;
+  Split[Global.currentPerSplit].transposeOctave = 0;
+
   // Push commit state
   short prevCommittedPitchOffset = getCommittedPitchOffset();
   short prevCommittedColorOffset = getCommittedColorOffset();
@@ -113,7 +117,8 @@ void handleTranspose2NewTouch() {
     midiSendNoteOff(Global.currentPerSplit, previewNote, midiChannel);
     midiSendNoteOn(Global.currentPerSplit, previewNote, 96, midiChannel);
 
-    uncommittedPitchOffset = getCommittedPitchOffset() + dragOffset();
+    // TODO: Disabled pitch offset for now
+    // uncommittedPitchOffset = getCommittedPitchOffset() + dragOffset();
   } else if (dragLayer == layerColor) {
     uncommittedColorOffset = mod(getCommittedColorOffset() - dragOffset(), 12);
   } else if (dragLayer == layerMode) {
