@@ -107,16 +107,19 @@ void handleTranspose2NewTouch() {
   // Handle this as a drag event
   if (!isDragging) {
     dragStart();
+    // Start playing note
+    if (dragLayer == layerOctave || dragLayer == layerPitch || dragLayer == layerMove) {
+      midiChannel = takeChannel(Global.currentPerSplit, sensorRow); // TODO: Handle channel better
+      previewNote = transposedNote(Global.currentPerSplit, sensorCol, sensorRow);
+      midiSendNoteOff(Global.currentPerSplit, previewNote, midiChannel);
+      midiSendNoteOn(Global.currentPerSplit, previewNote, 96, midiChannel);
+    }
   } else {
     dragUpdate();
   }
 
+  // Perform layer-specific drag update
   if (dragLayer == layerOctave || dragLayer == layerPitch) {
-    midiChannel = takeChannel(Global.currentPerSplit, sensorRow); // TODO: Handle channel better
-    previewNote = transposedNote(Global.currentPerSplit, sensorCol, sensorRow);
-    midiSendNoteOff(Global.currentPerSplit, previewNote, midiChannel);
-    midiSendNoteOn(Global.currentPerSplit, previewNote, 96, midiChannel);
-
     // TODO: Disabled pitch offset for now
     // uncommittedPitchOffset = getCommittedPitchOffset() + dragOffset();
   } else if (dragLayer == layerColor) {
@@ -184,10 +187,14 @@ static void dragStop() {
     return;
   }
   isDragging = false;
-  if (dragLayer == layerOctave || dragLayer == layerPitch) {
+  // Stop playing note
+  if (dragLayer == layerOctave || dragLayer == layerPitch || dragLayer == layerMove) {
     midiSendNoteOff(Global.currentPerSplit, previewNote, midiChannel);
     releaseChannel(Global.currentPerSplit, midiChannel);
+  }
 
+  // Handle layer-specific drag stop
+  if (dragLayer == layerOctave || dragLayer == layerPitch) {
     commitPitchOffset(uncommittedPitchOffset);
   } else if (dragLayer == layerColor) {
     commitColorOffset(uncommittedColorOffset);
