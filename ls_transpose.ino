@@ -108,12 +108,10 @@ void handleTranspose2NewTouch() {
   if (!isDragging) {
     dragStart();
     // Start playing note
-    if (dragLayer == layerOctave || dragLayer == layerPitch || dragLayer == layerMove) {
-      midiChannel = takeChannel(Global.currentPerSplit, sensorRow); // TODO: Handle channel better
-      previewNote = transposedNote(Global.currentPerSplit, sensorCol, sensorRow);
-      midiSendNoteOff(Global.currentPerSplit, previewNote, midiChannel);
-      midiSendNoteOn(Global.currentPerSplit, previewNote, 96, midiChannel);
-    }
+    midiChannel = takeChannel(Global.currentPerSplit, sensorRow); // TODO: Handle channel better
+    previewNote = transposedNote(Global.currentPerSplit, sensorCol, sensorRow);
+    midiSendNoteOff(Global.currentPerSplit, previewNote, midiChannel);
+    midiSendNoteOn(Global.currentPerSplit, previewNote, 96, midiChannel);
   } else {
     dragUpdate();
   }
@@ -188,10 +186,8 @@ static void dragStop() {
   }
   isDragging = false;
   // Stop playing note
-  if (dragLayer == layerOctave || dragLayer == layerPitch || dragLayer == layerMove) {
-    midiSendNoteOff(Global.currentPerSplit, previewNote, midiChannel);
-    releaseChannel(Global.currentPerSplit, midiChannel);
-  }
+  midiSendNoteOff(Global.currentPerSplit, previewNote, midiChannel);
+  releaseChannel(Global.currentPerSplit, midiChannel);
 
   // Handle layer-specific drag stop
   if (dragLayer == layerOctave || dragLayer == layerPitch) {
