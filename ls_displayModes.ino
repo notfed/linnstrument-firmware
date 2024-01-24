@@ -71,6 +71,9 @@ boolean blinkAllRootNotes = false;    // indicates whether all root notes should
 // TODO: I added this, but we don't use it. Remove it
 short blinkNote = -1;                 // if non-negative, blink the specified note
 
+// if non-null, this function will be invoked to determine whether the specified note should be displayed
+boolean (*displayNoteFilter)(byte, byte, byte) = NULL;  
+
 // changes the active display mode
 void setDisplayMode(DisplayMode mode) {
   DEBUGPRINT((0, "setDisplayMode"));
@@ -545,6 +548,10 @@ void paintNormalDisplayCell(byte split, byte col, byte row) {
       colour = COLOR_WHITE;
       cellDisplay = cellFastPulse;
     }
+  }
+  // If this note is filtered out, make it black-and-white
+  if (displayNoteFilter != NULL && !(*displayNoteFilter)(split, col, row)) {
+    colour = COLOR_WHITE;
   }
 
   // show pulsating middle root note

@@ -42,6 +42,22 @@ void transpose2Reset() {
   isDragging = false;
 }
 
+// TODO: Can we do better?
+boolean transpose2NoteFilter(byte split, byte col, byte row) {
+  if (row != dragFromRow) {
+    return false;
+  }
+  short curCellDisplayedNote = getNoteNumber(split, col, row) + Split[split].transposeOctave;
+  short curCellTransposedNote = transposedNote(split, col, row);
+
+  short dragFromDisplayedNote = getNoteNumber(split, dragFromCol, dragFromRow) + Split[split].transposeOctave;
+  short dragFromActualnote = transposedNote(split, dragFromCol, dragFromRow);
+  short a = (dragFromActualnote / 12) * 12 - getCommittedMode() ;
+  short b = a + 12;
+
+  return curCellTransposedNote >= a && curCellTransposedNote < b;
+}
+
 void paintTranspose2Display() {
   // TODO: TEMPORARY: Hardcoding octave and pitch to 0 for now
   Split[Global.currentPerSplit].transposePitch = 0;
@@ -60,9 +76,13 @@ void paintTranspose2Display() {
   commitMoveOffset(uncommittedMoveOffset);
   
   // Draw main screen
+  if (isDragging && dragLayer == layerMode) {
+    displayNoteFilter = &transpose2NoteFilter;
+  }
   blinkAllRootNotes = true;
   paintNormalDisplay();
   blinkAllRootNotes = false;
+  displayNoteFilter = NULL;
 
   // Draw popup
   drawPopup();
@@ -272,7 +292,7 @@ static void drawPopup() {
       } else if (dragLayer == layerMode && (curNoteIsModeOffset || curNoteIsInScale)) {
         setLed(col, row, curNoteColor, curNoteIsModeOffset ? cellSlowPulse : cellOn);
       } else if (dragLayer == layerMove && (curNoteIsRoot || curNoteIsInScale)) {
-        setLed(col, row, curNoteColor, curNoteIsRoot ? cellSlowPulse : cellOn);
+        setLed(col, row, getPrimaryColor(Global.currentPerSplit), curNoteIsRoot ? cellSlowPulse : cellOn);
       } else {
         setLed(col, row, COLOR_OFF, cellOff);
       }
