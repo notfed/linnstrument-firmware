@@ -42,20 +42,39 @@ void transpose2Reset() {
   isDragging = false;
 }
 
+#ifndef COLOR_AND_DISPLAY_OVERRIDE_STRUCT
+#define COLOR_AND_DISPLAY_OVERRIDE_STRUCT
+
+struct ColorAndDisplayOverride {
+  boolean overrideColor;
+  boolean overrideDisplay;
+  byte color;
+  CellDisplay display;
+};
+
+#endif COLOR_AND_DISPLAY_OVERRIDE_STRUCT
+
 // TODO: Can we do better?
-boolean transpose2NoteFilter(byte split, byte col, byte row) {
+struct ColorAndDisplayOverride transpose2NoteFilter(byte split, byte col, byte row) {
   if (row != dragFromRow) {
-    return false;
+    return (struct ColorAndDisplayOverride){ false, false };
   }
   short curCellDisplayedNote = getNoteNumber(split, col, row) + Split[split].transposeOctave;
   short curCellTransposedNote = transposedNote(split, col, row);
 
   short dragFromDisplayedNote = getNoteNumber(split, dragFromCol, dragFromRow) + Split[split].transposeOctave;
   short dragFromActualnote = transposedNote(split, dragFromCol, dragFromRow);
-  short a = (dragFromActualnote / 12) * 12 - getCommittedMode() ;
-  short b = a + 12;
 
-  return curCellTransposedNote >= a && curCellTransposedNote < b;
+  // short a = (dragFromActualnote / 12) * 12 - getCommittedMode() 
+  short a = ((dragFromActualnote) / 12) * 12;
+  short b = a + 12;
+ 
+  struct ColorAndDisplayOverride result { false, false };
+  if (! (curCellTransposedNote >= a && curCellTransposedNote < b) ) {
+    result.overrideDisplay = true;
+    result.display = cellOff;
+  }
+  return result;
 }
 
 void paintTranspose2Display() {

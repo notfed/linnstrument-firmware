@@ -71,8 +71,20 @@ boolean blinkAllRootNotes = false;    // indicates whether all root notes should
 // TODO: I added this, but we don't use it. Remove it
 short blinkNote = -1;                 // if non-negative, blink the specified note
 
+#ifndef COLOR_AND_DISPLAY_OVERRIDE_STRUCT
+#define COLOR_AND_DISPLAY_OVERRIDE_STRUCT
+
+struct ColorAndDisplayOverride {
+  boolean overrideColor;
+  boolean overrideDisplay;
+  byte color;
+  CellDisplay display;
+};
+
+#endif COLOR_AND_DISPLAY_OVERRIDE_STRUCT
+
 // if non-null, this function will be invoked to determine whether the specified note should be displayed
-boolean (*displayNoteFilter)(byte, byte, byte) = NULL;  
+struct ColorAndDisplayOverride (*displayNoteFilter)(byte, byte, byte) = NULL;  
 
 // changes the active display mode
 void setDisplayMode(DisplayMode mode) {
@@ -549,9 +561,15 @@ void paintNormalDisplayCell(byte split, byte col, byte row) {
       cellDisplay = cellFastPulse;
     }
   }
-  // If this note is filtered out, make it black-and-white
-  if (displayNoteFilter != NULL && !(*displayNoteFilter)(split, col, row)) {
-    colour = COLOR_WHITE;
+  // If this note has an override, apply it
+  if (displayNoteFilter != NULL) {
+    struct ColorAndDisplayOverride ColorAndDisplayOverride = (*displayNoteFilter)(split, col, row);
+    if (ColorAndDisplayOverride.overrideColor) {
+      colour = ColorAndDisplayOverride.color;
+    }
+    if (ColorAndDisplayOverride.overrideDisplay) {
+      cellDisplay = ColorAndDisplayOverride.display;
+    }
   }
 
   // show pulsating middle root note
