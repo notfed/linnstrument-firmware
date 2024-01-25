@@ -76,8 +76,8 @@ short blinkNote = -1;                 // if non-negative, blink the specified no
 
 struct ColorAndDisplayOverride {
   boolean overrideColor;
-  boolean overrideDisplay;
   byte color;
+  boolean overrideDisplay;
   CellDisplay display;
 };
 

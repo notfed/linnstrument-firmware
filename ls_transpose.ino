@@ -26,7 +26,12 @@ static short dragFromRow = 0;
 static short uncommittedMoveOffset = 0;
 static short uncommittedPitchOffset = 0;
 static short uncommittedColorOffset = 0;
+
+// Layer-related temporary variables
 static short uncommittedMode = 0;
+static short dragFromMode = 0;
+static short rawUncommittedMode = 0;
+
 static short dragToCol = 0;
 static short dragToRow = 0;
 static short dragDeltaCol = 0;
@@ -47,34 +52,31 @@ void transpose2Reset() {
 
 struct ColorAndDisplayOverride {
   boolean overrideColor;
-  boolean overrideDisplay;
   byte color;
+  boolean overrideDisplay;
   CellDisplay display;
 };
 
 #endif COLOR_AND_DISPLAY_OVERRIDE_STRUCT
 
-// TODO: Can we do better?
+// When dragging the mode layer, this is called to paint a cell
+// From the dragged row, just color one octave, starting at the mode offset. Hide other notes.
 struct ColorAndDisplayOverride transpose2NoteFilter(byte split, byte col, byte row) {
+  // If not dragging this row, paint this row white
   if (row != dragFromRow) {
-    return (struct ColorAndDisplayOverride){ false, false };
+     return (struct ColorAndDisplayOverride) { true, COLOR_WHITE, false, cellOff };
   }
-  short curCellDisplayedNote = getNoteNumber(split, col, row) + Split[split].transposeOctave;
-  short curCellTransposedNote = transposedNote(split, col, row);
 
-  short dragFromDisplayedNote = getNoteNumber(split, dragFromCol, dragFromRow) + Split[split].transposeOctave;
-  short dragFromActualnote = transposedNote(split, dragFromCol, dragFromRow);
+  short dragFromNote = getNoteNumber(split, dragFromCol, dragFromRow) + Split[split].transposeOctave;
+  short curNote = getNoteNumber(split, col, row) + Split[split].transposeOctave;
+  short dragToMode = rawUncommittedMode;
+  short rootNote = ((dragFromNote + dragFromMode) / 12) * 12 - dragToMode;
 
-  // short a = (dragFromActualnote / 12) * 12 - getCommittedMode() 
-  short a = ((dragFromActualnote) / 12) * 12;
-  short b = a + 12;
- 
-  struct ColorAndDisplayOverride result { false, false };
-  if (! (curCellTransposedNote >= a && curCellTransposedNote < b) ) {
-    result.overrideDisplay = true;
-    result.display = cellOff;
+  if (curNote >= rootNote && curNote < (rootNote + 12)) {
+     return (struct ColorAndDisplayOverride) { false, 0, false, cellOff };
+  } else {
+     return (struct ColorAndDisplayOverride) { true, COLOR_BLACK, true, cellOff };
   }
-  return result;
 }
 
 void paintTranspose2Display() {
@@ -168,6 +170,7 @@ void handleTranspose2NewTouch() {
       scaleGetEffectiveScale(Global.activeNotes, maybeUncommittedMode) & (1 << rootNote);
     if (isRootInScale) {
       uncommittedMode = maybeUncommittedMode;
+      rawUncommittedMode = getCommittedMode() - dragOffset();
     }
   } else if (dragLayer == layerMove) {
     uncommittedMoveOffset = getCommittedMoveOffset() + dragOffset();
@@ -249,6 +252,7 @@ static void dragStart() {
   uncommittedPitchOffset = getCommittedPitchOffset();
   uncommittedColorOffset = getCommittedColorOffset();
   uncommittedMode = getCommittedMode();
+  dragFromMode = uncommittedMode;
   uncommittedMoveOffset = getCommittedMoveOffset();
   dragUpdate();
 }
@@ -309,7 +313,7 @@ static void drawPopup() {
       } else if (dragLayer == layerPitch && (curPitchIsRoot || curNoteIsInScale)) {
         setLed(col, row, curNoteColor, curPitchIsRoot ? cellSlowPulse : cellOn); // ?
       } else if (dragLayer == layerMode && (curNoteIsModeOffset || curNoteIsInScale)) {
-        setLed(col, row, curNoteColor, curNoteIsModeOffset ? cellSlowPulse : cellOn);
+        setLed(col, row, getPrimaryColor(Global.currentPerSplit), curNoteIsModeOffset ? cellSlowPulse : cellOn);
       } else if (dragLayer == layerMove && (curNoteIsRoot || curNoteIsInScale)) {
         setLed(col, row, getPrimaryColor(Global.currentPerSplit), curNoteIsRoot ? cellSlowPulse : cellOn);
       } else {
