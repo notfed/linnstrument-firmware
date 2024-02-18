@@ -18,7 +18,7 @@ static short curNumCellsTouched = 0;
 static byte previewNote = 0;
 // static boolean isDraggingFromRoot = false;
 static boolean isDragging = false;
-static Layer dragLayer = layerColor;
+static Layer dragLayer = layerMove;
 static unsigned long dragUpdateTime = 0;
 static unsigned long lastReleaseAllTime = 0;
 static short dragFromCol = 0;
@@ -80,9 +80,9 @@ struct ColorAndDisplayOverride transpose2NoteFilter(byte split, byte col, byte r
 }
 
 void paintTranspose2Display() {
-  // TODO: TEMPORARY: Hardcoding octave and pitch to 0 for now
-  Split[Global.currentPerSplit].transposePitch = 0;
-  Split[Global.currentPerSplit].transposeOctave = 0;
+  // // TODO: TEMPORARY: Hardcoding octave and pitch to 0 for now
+  // Split[Global.currentPerSplit].transposePitch = 0;
+  // Split[Global.currentPerSplit].transposeOctave = 0;
 
   // Push commit state
   short prevCommittedPitchOffset = getCommittedPitchOffset();
@@ -106,7 +106,7 @@ void paintTranspose2Display() {
   displayNoteFilter = NULL;
 
   // Draw popup
-  drawPopup();
+  drawPopup2();
 
   // Pop commit state
   commitPitchOffset(prevCommittedPitchOffset);
@@ -122,23 +122,36 @@ static inline short dragOffset() {
 void handleTranspose2NewTouch() {
   maybeTimeoutDrag();
 
-  // Touched popup? Just change the popup layer and redraw.
-  if (sensorCol == 1 && sensorRow <= 4) {
-    if (sensorRow == 4) {
-      dragLayer = layerOctave;
-    } else if (sensorRow == 3) {
-      dragLayer = layerPitch;
-    } else if (sensorRow == 2) {
-      dragLayer = layerColor;
-    } else if (sensorRow == 1) {
-      dragLayer = layerMode;
-    } else if (sensorRow == 0) {
-      dragLayer = layerMove;
-    }
+  // LAYER CHANGE: // Touched left of popup? Just change the popup layer and redraw.
+  // if (sensorCol == 1 && sensorRow <= 4) {
+  //    if (sensorRow == 0) {
+  //     dragLayer = layerPitch;
+  //   } else if (sensorRow == 1) {
+  //     dragLayer = layerMode;
+  //   } else if (sensorRow == 2) {
+  //     dragLayer = layerColor;
+  //   } else {
+  //     dragLayer = layerMove;
+  //   }
+  //   updateDisplay();
+  //   return;
+  // }
+
+  // Touched inside popup? If row0, set the pitch offset. If row1, set the mode offset. If row2, set the color offset.
+  if (sensorCol >= 2 && sensorCol <= 13 && sensorRow >= 0 && sensorRow <= 2) {
+     if (sensorRow == 0) {
+       commitPitchOffset(sensorCol - 2);
+     } else if (sensorRow == 1) {
+       commitMode(sensorCol - 2);
+     } else if (sensorRow == 2) {
+       commitColorOffset(sensorCol - 2);
+     }
     updateDisplay();
     return;
   }
-  if (sensorCol <= 5 && sensorRow <= 4) {
+
+  // Touched left or right of popup? Ignore it.
+  if (sensorCol <= 14 && sensorRow <= 2) {
     return;
   }
 
@@ -265,6 +278,32 @@ static void dragUpdate() {
   dragDeltaRow = sensorRow - dragFromRow;
 }
 
+static void drawPopup2() {
+  // Draw cells between rows 0..2, and columns 1..12
+  // Row 0 will draw 12 cells, each with the color of the note, and pulsing if it's the pitch offset
+  // Row 1 will draw 12 cells, each with the color of the note, and pulsing if it's the mode offset
+  // Row 2 will draw 12 cells, each with the color of the note, and pulsing if it's the color offset  
+  for (int col = 2; col <= 13; col++) {
+    byte curNote = col - 2;
+    boolean curNoteIsInScale = scaleContainsNote(curNote);
+
+    byte curNoteColor = curNoteIsInScale ? scaleGetEffectiveNoteColor(curNote) : COLOR_WHITE;
+
+    byte curNoteIsPitchOffset =  mod(getCommittedPitchOffset(), 12) == curNote;
+    boolean curNoteIsModeOffset = mod(scaleGetEffectiveMode(), 12) == curNote;
+    byte curNoteIsColorOffset = mod(getCommittedColorOffset(), 12) == curNote;
+  
+    setLed(col, 0, curNoteColor, curNoteIsPitchOffset ? cellSlowPulse : (curNoteIsInScale ? cellOn : cellOff));
+    setLed(col, 1, curNoteColor, curNoteIsModeOffset ? cellSlowPulse : (curNoteIsInScale ? cellOn : cellOff));
+    setLed(col, 2, curNoteColor, curNoteIsColorOffset ? cellSlowPulse : (curNoteIsInScale ? cellOn : cellOff));
+  }
+  // Draw white borderrs  to the left and to the right of the popup
+  for (int row = 0; row <= 2; row++) {
+    setLed(1, row, COLOR_WHITE, cellOn);
+    setLed(14, row, COLOR_WHITE, cellOn);
+  } 
+}
+
 static void drawPopup() {
   // Draw right border
   for (int row = 0; row <= 4; row++) {
@@ -337,6 +376,7 @@ static short getCommittedPitchOffset() {
 }
 
 static void commitPitchOffset(short pitchOffset) {
+  uncommittedPitchOffset = pitchOffset;
   Split[Global.currentPerSplit].transposePitch = pitchOffset;
 }
 
@@ -346,6 +386,7 @@ static short getCommittedColorOffset() {
 }
 
 static inline void commitColorOffset(short colorOffset) {
+  uncommittedColorOffset = colorOffset;
   scaleSetAssignedColorOffset(mod(colorOffset, 12));
 }
 
@@ -355,6 +396,8 @@ static inline short getCommittedMode() {
 }
 
 static inline void commitMode(short mode) {
+  uncommittedMode = mode;
+  rawUncommittedMode = mode;
   scaleSetAssignedMode(mode);
 }
 
