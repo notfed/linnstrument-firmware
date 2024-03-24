@@ -22,7 +22,7 @@ enum Option {
 
 
 static int curVisibleOptions = OPTION_PITCH | OPTION_COLOR | OPTION_SCALE;
-static int cutEditOption = OPTION_NONE;
+static int curEditOption = OPTION_NONE;
 
 static short curNumCellsTouched = 0;
 
@@ -232,16 +232,16 @@ void handleTranspose2Release() {
     // Long-held a popup option left-border? Enable it and put it in edit mode.
     if (calcTimeDelta(micros(), lastTouchTime) >= HOLD_TIME_US) {
       switch(sensorRow) {
-        case 0: curVisibleOptions |= OPTION_PITCH; cutEditOption = OPTION_PITCH; break;
-        case 1: curVisibleOptions |= OPTION_SCALE; cutEditOption = OPTION_SCALE; break;
-        case 2: curVisibleOptions |= OPTION_COLOR; cutEditOption = OPTION_COLOR; break;
+        case 0: curVisibleOptions |= OPTION_PITCH; curEditOption = OPTION_PITCH; break;
+        case 1: curVisibleOptions |= OPTION_SCALE; curEditOption = OPTION_SCALE; break;
+        case 2: curVisibleOptions |= OPTION_COLOR; curEditOption = OPTION_COLOR; break;
       }
     // Tapped a popup option left-border? Toggle it and take it out of edit mode.
     } else {
       switch(sensorRow) {
-        case 0: curVisibleOptions ^= OPTION_PITCH; cutEditOption &= ~OPTION_PITCH; break;
-        case 1: curVisibleOptions ^= OPTION_SCALE; cutEditOption &= ~OPTION_SCALE; break;
-        case 2: curVisibleOptions ^= OPTION_COLOR; cutEditOption &= ~OPTION_COLOR; break;
+        case 0: curVisibleOptions ^= OPTION_PITCH; curEditOption &= ~OPTION_PITCH; break;
+        case 1: curVisibleOptions ^= OPTION_SCALE; curEditOption &= ~OPTION_SCALE; break;
+        case 2: curVisibleOptions ^= OPTION_COLOR; curEditOption &= ~OPTION_COLOR; break;
       }
     }
     updateDisplay();
@@ -364,13 +364,13 @@ static void drawPopup2() {
     }
   }
   // Draw left-side white border
-  for (int row = 0; row <= 2; row++) {
-    setLed(1, row, COLOR_WHITE, cellOn);
-    // Draw right-side white border
-    setLed(curVisibleOptions & OPTION_PITCH ? 14 : 2, 0, COLOR_WHITE, cellOn);
-    setLed(curVisibleOptions & OPTION_SCALE ? 14 : 2, 1, COLOR_WHITE, cellOn);
-    setLed(curVisibleOptions & OPTION_COLOR ? 14 : 2, 2, COLOR_WHITE, cellOn);
-  }
+  setLed(1, 0, COLOR_WHITE, curEditOption & OPTION_PITCH ? cellSlowPulse : cellOn);
+  setLed(1, 1, COLOR_WHITE, curEditOption & OPTION_SCALE ? cellSlowPulse : cellOn);
+  setLed(1, 2, COLOR_WHITE, curEditOption & OPTION_COLOR ? cellSlowPulse : cellOn);
+  // Draw right-side white border
+  setLed(curVisibleOptions & OPTION_PITCH ? 14 : 2, 0, COLOR_WHITE, curEditOption & OPTION_PITCH ? cellSlowPulse : cellOn);
+  setLed(curVisibleOptions & OPTION_SCALE ? 14 : 2, 1, COLOR_WHITE, curEditOption & OPTION_SCALE ? cellSlowPulse : cellOn);
+  setLed(curVisibleOptions & OPTION_COLOR ? 14 : 2, 2, COLOR_WHITE, curEditOption & OPTION_COLOR ? cellSlowPulse : cellOn);
 }
 
 static void drawPopup() {
