@@ -400,21 +400,41 @@ void paintNormalDisplay() {
     paintNormalDisplaySplit(RIGHT, divider, NUMCOLS);
   }
 
-  if (Global.splitActive) {
-    // light the octave/transpose switch if the pitch is transposed
-    if ((Split[LEFT].transposePitch < 0 && Split[RIGHT].transposePitch < 0) || (Split[LEFT].transposePitch < 0 && Split[RIGHT].transposePitch == 0) || (Split[LEFT].transposePitch == 0 && Split[RIGHT].transposePitch < 0)) {
-      setLed(0, OCTAVE_ROW, COLOR_RED, cellOn);
-    } else if ((Split[LEFT].transposePitch > 0 && Split[RIGHT].transposePitch > 0) || (Split[LEFT].transposePitch > 0 && Split[RIGHT].transposePitch == 0) || (Split[LEFT].transposePitch == 0 && Split[RIGHT].transposePitch > 0)) {
-      setLed(0, OCTAVE_ROW, COLOR_GREEN, cellOn);
-    } else if (Split[LEFT].transposePitch != 0 && Split[RIGHT].transposePitch != 0) {
-      setLed(0, OCTAVE_ROW, COLOR_YELLOW, cellOn);
+  if (Global.colorScalesEnabled) {
+    if (Global.splitActive) {
+      // light the octave/transpose switch if the pitch is transposed
+      if ((Split[LEFT].transposePitch < 0 && Split[RIGHT].transposePitch < 0) || (Split[LEFT].transposePitch < 0 && Split[RIGHT].transposePitch == 0) || (Split[LEFT].transposePitch == 0 && Split[RIGHT].transposePitch < 0)) {
+        setLed(0, OCTAVE_ROW, COLOR_RED, cellOn);
+      } else if ((Split[LEFT].transposePitch > 0 && Split[RIGHT].transposePitch > 0) || (Split[LEFT].transposePitch > 0 && Split[RIGHT].transposePitch == 0) || (Split[LEFT].transposePitch == 0 && Split[RIGHT].transposePitch > 0)) {
+        setLed(0, OCTAVE_ROW, COLOR_GREEN, cellOn);
+      } else if (Split[LEFT].transposePitch != 0 && Split[RIGHT].transposePitch != 0) {
+        setLed(0, OCTAVE_ROW, COLOR_YELLOW, cellOn);
+      } else {
+        clearLed(0, OCTAVE_ROW);
+      }
     } else {
-      clearLed(0, OCTAVE_ROW);
+      if (scaleGetAssignedColorOffset() >= 1 &&
+          scaleGetAssignedColorOffset() <= 11) {
+        setLed(0, OCTAVE_ROW, scaleGetEffectiveNoteColor(0), cellOn);
+      }
     }
   } else {
-    if (scaleGetAssignedColorOffset() >= 1 &&
-        scaleGetAssignedColorOffset() <= 11) {
-      setLed(0, OCTAVE_ROW, scaleGetEffectiveNoteColor(0), cellOn);
+    // light the octave/transpose switch if the pitch is transposed
+    if ((Split[LEFT].transposePitch < 0 && Split[RIGHT].transposePitch < 0) ||
+        (Split[LEFT].transposePitch < 0 && Split[RIGHT].transposePitch == 0) ||
+        (Split[LEFT].transposePitch == 0 && Split[RIGHT].transposePitch < 0)) {
+      setLed(0, OCTAVE_ROW, COLOR_RED, cellOn);
+    }
+    else if ((Split[LEFT].transposePitch > 0 && Split[RIGHT].transposePitch > 0) ||
+            (Split[LEFT].transposePitch > 0 && Split[RIGHT].transposePitch == 0) ||
+            (Split[LEFT].transposePitch == 0 && Split[RIGHT].transposePitch > 0)) {
+      setLed(0, OCTAVE_ROW, COLOR_GREEN, cellOn);
+    }
+    else if (Split[LEFT].transposePitch != 0 && Split[RIGHT].transposePitch != 0) {
+      setLed(0, OCTAVE_ROW, COLOR_YELLOW, cellOn);
+    }
+    else {
+      clearLed(0, OCTAVE_ROW);
     }
   }
 }
@@ -508,7 +528,12 @@ void paintStrumDisplayCell(byte split, byte col, byte row) {
   setLed(col, row, colour, cellDisplay);
 }
 
+
 void paintNormalDisplayCell(byte split, byte col, byte row) {
+  if (Global.colorScalesEnabled) {
+    paintNormalDisplayCellWithColorScales(split, col, row);
+    return;
+  }
   if (userFirmwareActive) return;
 
   // by default clear the cell color
@@ -522,41 +547,87 @@ void paintNormalDisplayCell(byte split, byte col, byte row) {
   if (actualnote < 0 || actualnote > 127) {
     colour = COLOR_OFF;
     cellDisplay = cellOff;
-  } else if (!customLedPatternActive) {
+  }
+  else if (!customLedPatternActive) {
     byte octaveNote = abs(displayedNote % 12);
 
-    boolean isMainNote = scaleGetEffectiveScale() & (1 << octaveNote);
-    boolean isAccentNote = Global.accentNotes[Global.activeNotes] & (1 << octaveNote);
-    boolean splitDefinesMainColor =
-      Split[split].colorMain != COLOR_OFF && Split[split].colorMain != COLOR_BLACK;
-    boolean splitDefinesAccentColor =
-      Split[split].colorAccent != COLOR_OFF && Split[split].colorAccent != COLOR_BLACK;
-    boolean isDisplayedNoteRoot = octaveNote == 0;
-
-    // paint all cells to assigned per-note colors, overriding with per-split colors if set
-    if (splitDefinesAccentColor && isAccentNote) {
-      // use per-split accent color
-      // TODO: We can't access this screen anymore...should we retain backwards compat?
-      colour = Split[split].colorAccent;
-      cellDisplay = cellOn;
-    } else if (splitDefinesMainColor && isMainNote) {
-      // use per-split main color
+    // first paint all cells in split to its background color
+    if (Global.mainNotes[Global.activeNotes] & (1 << octaveNote)) {
       colour = Split[split].colorMain;
       cellDisplay = cellOn;
-    } else if (isMainNote) {
+    }
+
+    // then paint only notes marked as Accent notes with Accent color
+    if (Global.accentNotes[Global.activeNotes] & (1 << octaveNote)) {
+      colour = Split[split].colorAccent;
+      cellDisplay = cellOn;
+    }
+  }
+
+  // show pulsating middle root note
+  if (blinkMiddleRootNote && displayedNote == 60) {
+    colour = Split[split].colorAccent;
+    cellDisplay = cellFastPulse;
+  }
+
+  // if the low row is anything but normal, set it to the appropriate color
+  if (row == 0 && Split[split].lowRowMode != lowRowNormal) {
+    if ((Split[split].lowRowMode == lowRowCCX && Split[sensorSplit].lowRowCCXBehavior == lowRowCCFader) ||
+        (Split[split].lowRowMode == lowRowCCXYZ && Split[sensorSplit].lowRowCCXYZBehavior == lowRowCCFader)) {
+      colour = COLOR_BLACK;
+      cellDisplay = cellOff;
+    }
+    else {
+      colour = Split[split].colorLowRow;
+      cellDisplay = cellOn;
+    }
+    // actually set the cell's color
+    setLed(col, row, colour, cellDisplay, LED_LAYER_LOWROW);
+  }
+  else {
+    // actually set the cell's color
+    if (row == 0) {
+      clearLed(col, row, LED_LAYER_LOWROW);
+    }
+    setLed(col, row, colour, cellDisplay, LED_LAYER_MAIN);
+  }
+}
+
+void paintNormalDisplayCellWithColorScales(byte split, byte col, byte row) {
+  if (userFirmwareActive) return;
+
+  // by default clear the cell color
+  byte colour = COLOR_OFF;
+  CellDisplay cellDisplay = cellOff;
+
+  short displayedNote = getNoteNumber(split, col, row) + Split[split].transposeOctave;
+  short actualNote = transposedNote(split, col, row);
+  byte actualNoteClass = mod(displayedNote, 12);
+
+  // the note is out of MIDI note range, disable it
+  if (actualNote < 0 || actualNote > 127) {
+    colour = COLOR_OFF;
+    cellDisplay = cellOff;
+  } else if (!customLedPatternActive) {
+
+    boolean isNoteInScale = scaleGetEffectiveScale() & (1 << actualNoteClass);
+    boolean isNoteRoot = actualNoteClass == 0;
+
+    // Paint all in-scale cells to assigned per-note colors
+    if (isNoteInScale) {
       // use global per-note color
-      colour = scaleGetEffectiveNoteColor(octaveNote);
+      colour = scaleGetEffectiveNoteColor(actualNoteClass);
       // maybe blink the note
       if (blinkAllRootNotes && displayedNote == 60) {
         cellDisplay = cellOn;
-      } else if (blinkAllRootNotes && isDisplayedNoteRoot) {
+      } else if (blinkAllRootNotes && isNoteRoot) {
         cellDisplay = cellFastPulse;
-      } else if (blinkNote >= 0 && blinkNote <= 127 && actualnote == blinkNote) {
+      } else if (blinkNote >= 0 && blinkNote <= 127 && actualNote == blinkNote) {
         cellDisplay = cellFastPulse;
       } else {
         cellDisplay = cellOn;
       }
-    } else if (isDisplayedNoteRoot) {
+    } else if (isNoteRoot) {
       colour = COLOR_WHITE;
       cellDisplay = cellFastPulse;
     }
@@ -1389,52 +1460,47 @@ void paintOctaveTransposeDisplay(byte side) {
 
   // Paint the octave shift value
   if (!doublePerSplit || Split[LEFT].transposeOctave == Split[RIGHT].transposeOctave) {
-    paintOctave(getPrimaryColor(Global.currentPerSplit), 8, OCTAVE_ROW, Split[side].transposeOctave);
-  } else if (doublePerSplit) {
+    paintOctave(Split[Global.currentPerSplit].colorMain, 8, OCTAVE_ROW, Split[side].transposeOctave);
+  }
+  else if (doublePerSplit) {
     if (abs(Split[LEFT].transposeOctave) > abs(Split[RIGHT].transposeOctave)) {
-      paintOctave(getPrimaryColor(LEFT), 8, OCTAVE_ROW, Split[LEFT].transposeOctave);
-      paintOctave(getPrimaryColor(RIGHT), 8, OCTAVE_ROW, Split[RIGHT].transposeOctave);
-    } else {
-      paintOctave(getPrimaryColor(RIGHT), 8, OCTAVE_ROW, Split[RIGHT].transposeOctave);
-      paintOctave(getPrimaryColor(LEFT), 8, OCTAVE_ROW, Split[LEFT].transposeOctave);
+      paintOctave(Split[LEFT].colorMain, 8, OCTAVE_ROW, Split[LEFT].transposeOctave);
+      paintOctave(Split[RIGHT].colorMain, 8, OCTAVE_ROW, Split[RIGHT].transposeOctave);
+    }
+    else {
+      paintOctave(Split[RIGHT].colorMain, 8, OCTAVE_ROW, Split[RIGHT].transposeOctave);
+      paintOctave(Split[LEFT].colorMain, 8, OCTAVE_ROW, Split[LEFT].transposeOctave);
     }
   }
 
   // Paint the pitch transpose values
   if (!doublePerSplit || Split[LEFT].transposePitch == Split[RIGHT].transposePitch) {
-    paintTranspose(getPrimaryColor(Global.currentPerSplit), SWITCH_1_ROW, Split[side].transposePitch);
-  } else if (doublePerSplit) {
+    paintTranspose(Split[Global.currentPerSplit].colorMain, SWITCH_1_ROW, Split[side].transposePitch);
+  }
+  else if (doublePerSplit) {
     if (abs(Split[LEFT].transposePitch) > abs(Split[RIGHT].transposePitch)) {
-      paintTranspose(getPrimaryColor(LEFT), SWITCH_1_ROW, Split[LEFT].transposePitch);
-      paintTranspose(getPrimaryColor(RIGHT), SWITCH_1_ROW, Split[RIGHT].transposePitch);
-    } else {
-      paintTranspose(getPrimaryColor(RIGHT), SWITCH_1_ROW, Split[RIGHT].transposePitch);
-      paintTranspose(getPrimaryColor(LEFT), SWITCH_1_ROW, Split[LEFT].transposePitch);
+      paintTranspose(Split[LEFT].colorMain, SWITCH_1_ROW, Split[LEFT].transposePitch);
+      paintTranspose(Split[RIGHT].colorMain, SWITCH_1_ROW, Split[RIGHT].transposePitch);
+    }
+    else {
+      paintTranspose(Split[RIGHT].colorMain, SWITCH_1_ROW, Split[RIGHT].transposePitch);
+      paintTranspose(Split[LEFT].colorMain, SWITCH_1_ROW, Split[LEFT].transposePitch);
     }
   }
 
   // Paint the light transpose values
   if (!doublePerSplit || Split[LEFT].transposeLights == Split[RIGHT].transposeLights) {
-    paintTranspose(getPrimaryColor(Global.currentPerSplit), SWITCH_2_ROW, Split[side].transposeLights);
-  } else if (doublePerSplit) {
-    if (abs(Split[LEFT].transposeLights) > abs(Split[RIGHT].transposeLights)) {
-      paintTranspose(getPrimaryColor(LEFT), SWITCH_2_ROW, Split[LEFT].transposeLights);
-      paintTranspose(getPrimaryColor(RIGHT), SWITCH_2_ROW, Split[RIGHT].transposeLights);
-    } else {
-      paintTranspose(getPrimaryColor(RIGHT), SWITCH_2_ROW, Split[RIGHT].transposeLights);
-      paintTranspose(getPrimaryColor(LEFT), SWITCH_2_ROW, Split[LEFT].transposeLights);
-    }
+    paintTranspose(Split[Global.currentPerSplit].colorMain, SWITCH_2_ROW, Split[side].transposeLights);
   }
-
-  // Paint the color offset values
-  short colorOffsetTranspose = ((scaleGetEffectiveColorOffset() + 6) % 12) - 6;
-  if (!doublePerSplit || Split[LEFT].transposeLights == colorOffsetTranspose) {
-    paintTranspose(getPrimaryColor(Global.currentPerSplit), VOLUME_ROW, colorOffsetTranspose);
-    byte rootColor = scaleGetEffectiveNoteColor(0);
-    setLed(8, VOLUME_ROW, rootColor, cellOn);
-  } else if (doublePerSplit) {
-    paintTranspose(getPrimaryColor(RIGHT), VOLUME_ROW, colorOffsetTranspose);
-    paintTranspose(getPrimaryColor(LEFT), VOLUME_ROW, colorOffsetTranspose);
+  else if (doublePerSplit) {
+    if (abs(Split[LEFT].transposeLights) > abs(Split[RIGHT].transposeLights)) {
+      paintTranspose(Split[LEFT].colorMain, SWITCH_2_ROW, Split[LEFT].transposeLights);
+      paintTranspose(Split[RIGHT].colorMain, SWITCH_2_ROW, Split[RIGHT].transposeLights);
+    }
+    else {
+      paintTranspose(Split[RIGHT].colorMain, SWITCH_2_ROW, Split[RIGHT].transposeLights);
+      paintTranspose(Split[LEFT].colorMain, SWITCH_2_ROW, Split[LEFT].transposeLights);
+    }
   }
 
   paintShowSplitSelection(side);
@@ -1478,6 +1544,28 @@ void paintOctave(byte color, byte midcol, byte row, short octave) {
     case 12:
       setLed(midcol + 1, row, color, cellOn);
       break;
+  }
+}
+
+void displayNoteLights(int notelights) {
+  for (byte row = 0; row < 4; ++row) {
+    for (byte col = 0; col < 3; ++col) {
+      byte light = col + (row * 3);
+      if (notelights & 1 << light) {
+        lightLed(2+col, row);
+      }
+    }
+  }
+}
+
+void displayActiveNotes() {
+  for (byte row = 0; row < 4; ++row) {
+    for (byte col = 0; col < 3; ++col) {
+      byte light = col + (row * 3);
+      if (light == Global.activeNotes) {
+        setLed(2 + col, row, globalColor, cellOn);
+      }
+    }
   }
 }
 
@@ -1616,7 +1704,28 @@ void paintGlobalSettingsDisplay() {
     }
 
     // jaysullivan: redraw light settings (global settings)
-    scaleRedraw();
+    if (Global.colorScalesEnabled) {
+      scaleRedraw();
+    } else {
+      switch (lightSettings) {
+        case LIGHTS_MAIN:
+          if (!customLedPatternActive) {
+            lightLed(1, 0);
+            displayNoteLights(Global.mainNotes[Global.activeNotes]);
+          }
+          break;
+        case LIGHTS_ACCENT:
+          if (!customLedPatternActive) {
+            lightLed(1, 1);
+            displayNoteLights(Global.accentNotes[Global.activeNotes]);
+          }
+          break;
+        case LIGHTS_ACTIVE:
+          lightLed(1, 2);
+          displayActiveNotes();
+          break;
+      }
+    }
 
     switch (Global.rowOffset) {
       case ROWOFFSET_NOOVERLAP:  // no overlap
@@ -1717,6 +1826,11 @@ void paintGlobalSettingsDisplay() {
       case ArpSixtyfourthTriplet:
         // not available as panel settings
         break;
+    }
+
+    // show whether the "Color Scales" feature is enabled
+    if (Global.colorScalesEnabled) {
+      lightLed(14, 2);
     }
 
     // show the arpeggiator octave
@@ -1909,6 +2023,7 @@ void paintLowRowPressureBar() {
 
 byte getPrimaryColor(byte split) {
   byte color = Split[split].colorMain;
+  // TODO(jaysullivan): We don't actually need this anymore?
   if (color == COLOR_OFF || color == COLOR_BLACK) {
     color = globalColor;
   }
@@ -1917,6 +2032,7 @@ byte getPrimaryColor(byte split) {
 
 byte getSecondaryColor(byte split) {
   byte color = Split[split].colorAccent;
+  // TODO(jaysullivan): We don't actually need this anymore?
   if (color == COLOR_OFF || color == COLOR_BLACK) {
     color = globalAltColor;
   }

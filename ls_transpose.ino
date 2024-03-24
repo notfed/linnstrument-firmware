@@ -2,7 +2,7 @@
 // TODO:
 // -  Handle split-screen
 // -------------------------------
-boolean isTranspose2Enabled() { return true; }
+boolean isTranspose2Enabled() { return Global.colorScalesEnabled; }
 
 enum Layer {
   layerOctave = 0b000010,

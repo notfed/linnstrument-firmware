@@ -754,6 +754,7 @@ struct GlobalSettings {
   byte activeNotes;                          // controls which collection of note lights presets is active
   int mainNotes[12];                         // bitmask array that determines which notes receive "main" lights
   int accentNotes[12];                       // bitmask array that determines which notes receive accent lights (octaves, white keys, black keys, etc.)
+  boolean colorScalesEnabled;                // Enable the "Colors and Scales" feature
   byte scaleMode[12];                        // Assigns a "mode" to each scale. This results in an effective (left-)rotation of the scale array. This is 1-indexed (0 means unassigned).
   byte activePalette;                        // One of 12 color palettes (0-11)
   byte paletteColors[12][12];                // For each color palette, assign a color (absolute color value) to each note (i.e., pitch class, i.e., 0-11). 

@@ -2360,11 +2360,6 @@ void handleOctaveTransposeNewTouchSplit(byte side) {
       Split[side].transposeLights = sensorCol - 8;
     }
   }
-  else if (sensorRow == VOLUME_ROW) {
-    if (sensorCol >= 2 && sensorCol <= 13) {
-      scaleSetAssignedColorOffset((sensorCol + 12 - 8) % 12);
-    }
-  }
 }
 
 void handleOctaveTransposeRelease() {
@@ -2376,6 +2371,16 @@ void handleSplitPointNewTouch() {
   changedSplitPoint = true;
   Global.splitPoint = sensorCol;
   updateDisplay();
+}
+
+// This manages the toggling of the note light cells (columns 2-4 and rows 0-3)
+void toggleNoteLights(int& notelights) {
+  if (sensorCol < 2 || sensorCol > 4 || sensorRow > 3) {
+    return;
+  }
+
+  byte light = sensorCol-2 + (sensorRow*3);
+  notelights ^= 1 << light;
 }
 
 boolean isArpeggiatorTempoTriplet() {
@@ -2586,7 +2591,13 @@ void handleGlobalSettingNewTouch() {
           case LIGHTS_ACCENT:
           case LIGHTS_MAIN:
           case LIGHTS_ACTIVE:
-            scaleCellOnTouchStart(sensorCol, sensorRow);
+            if (Global.colorScalesEnabled) {
+              scaleCellOnTouchStart(sensorCol, sensorRow);
+            } else {
+              if (!customLedPatternActive) {
+                lightSettings = sensorRow;
+              }
+            }
             break;
           case 3:
             // handled at release
@@ -2596,9 +2607,29 @@ void handleGlobalSettingNewTouch() {
       case 2:
       case 3:
       case 4:
-        if (sensorRow >= 0 && sensorRow <= 3) {
-          scaleCellOnTouchStart(sensorCol, sensorRow);
-        }
+          if(sensorRow >= 0 && sensorRow <= 3) {
+            if (Global.colorScalesEnabled) {
+                scaleCellOnTouchStart(sensorCol, sensorRow);
+            } else {
+              // select individual scale notes or accent notes
+              switch (lightSettings) {
+                case LIGHTS_MAIN:
+                  if (!customLedPatternActive) {
+                    toggleNoteLights(Global.mainNotes[Global.activeNotes]);
+                  }
+                  break;
+                case LIGHTS_ACCENT:
+                  if (!customLedPatternActive) {
+                    toggleNoteLights(Global.accentNotes[Global.activeNotes]);
+                  }
+                  break;
+                case LIGHTS_ACTIVE:
+                  Global.activeNotes = sensorCol-2 + (sensorRow*3);
+                  loadCustomLedLayer(getActiveCustomLedPattern());
+                  break;
+              }
+            }
+          }
         break;
 
       // select one of 8 Row Offsets: 0 = no overlap, 1-12 = 1=12, 13 = octave, 14 = guitar
@@ -2833,6 +2864,9 @@ void handleGlobalSettingNewTouch() {
               Global.arpOctave = 2;
             }
             break;
+          case 2:
+            Global.colorScalesEnabled = !Global.colorScalesEnabled;
+            break;
           case 3:
             if (!isSyncedToMidiClock()) {
               lightLed(14, 3);
@@ -2858,7 +2892,9 @@ void handleGlobalSettingNewTouch() {
         case LIGHTS_ACCENT:
         case LIGHTS_MAIN:
         case LIGHTS_ACTIVE:
-          scaleCellOnTouchStartHold(sensorCol, sensorRow);
+          if (Global.colorScalesEnabled) {
+            scaleCellOnTouchStartHold(sensorCol, sensorRow);
+          }
           break;
         case 3:
           setLed(sensorCol, sensorRow, getSplitHandednessColor(), cellSlowPulse);
@@ -2869,7 +2905,13 @@ void handleGlobalSettingNewTouch() {
     case 2:
     case 3:
     case 4:
-      scaleCellOnTouchStartHold(sensorCol, sensorRow);
+      if (Global.colorScalesEnabled) {
+        scaleCellOnTouchStartHold(sensorCol, sensorRow);
+      } else {
+        if (lightSettings == LIGHTS_ACTIVE && sensorRow == 3) {
+          setLed(sensorCol, sensorRow, globalColor, cellSlowPulse);
+        }
+      }
       break;
 
     case 6:
@@ -2969,7 +3011,9 @@ void handleGlobalSettingHold() {
           case LIGHTS_ACCENT:
           case LIGHTS_MAIN:
           case LIGHTS_ACTIVE:
-            scaleCellOnHold(sensorCol, sensorRow); 
+            if (Global.colorScalesEnabled) {
+              scaleCellOnHold(sensorCol, sensorRow); 
+            }
             break;
           case 3:
             resetNumericDataChange();
@@ -2982,7 +3026,16 @@ void handleGlobalSettingHold() {
       case 2:
       case 3:
       case 4:
-        scaleCellOnHold(sensorCol, sensorRow); 
+        if (Global.colorScalesEnabled) {
+          scaleCellOnHold(sensorCol, sensorRow); 
+        } else {
+          if (lightSettings == LIGHTS_ACTIVE && sensorRow == 3) {
+              cellTouched(ignoredCell);
+              loadCustomLedLayer(getActiveCustomLedPattern());
+              setDisplayMode(displayCustomLedsEditor);
+              updateDisplay();
+          }
+        }
         break;
 
       case 6:
@@ -3111,7 +3164,7 @@ void handleGlobalSettingRelease() {
       ensureCellBeforeHoldWait(getSplitHandednessColor(), Device.otherHanded ? cellOn : cellOff)) {
     Device.otherHanded = !Device.otherHanded;
   }
-  else if (sensorCol >= 1 && sensorCol <= 4 && sensorRow >= 0 && sensorRow <= 3) {
+  else if (Global.colorScalesEnabled && sensorCol >= 1 && sensorCol <= 4 && sensorRow >= 0 && sensorRow <= 3) {
     scaleCellOnTouchEnd(sensorCol, sensorRow);
   }
   else if (sensorCol == 6 && sensorRow == 2 &&

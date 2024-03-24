@@ -2528,9 +2528,16 @@ int StepSequencerState::getRowNoteNum(byte noteRow) {
     case sequencerScales: {
       int row = -1;
       for (byte i = 0; i < 128; ++i) {
-        if (((scaleGetEffectiveScale() >> (i % 12)) & 1) ||
-            ((Global.accentNotes[Global.activeNotes] >> (i % 12)) & 1)) {
-          row += 1;
+        if (Global.colorScalesEnabled) {
+          // TODO(jaysullivan): Untested?
+          if (scaleContainsNote(i)) {
+            row += 1;
+          }
+        } else {
+          if (((Global.mainNotes[Global.activeNotes] >> (i % 12)) & 1) ||
+              ((Global.accentNotes[Global.activeNotes] >> (i % 12)) & 1)) {
+            row += 1;
+          }
         }
         if (noteRow + rowOffset == row) {
           return min(max(i + 48, 0), 127);

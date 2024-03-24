@@ -326,3 +326,17 @@ void scaleCellOnHold(byte sensorCol, byte sensorRow) {
       updateDisplay();
   }
 }
+
+// Bitmask of non-root-notes of the current scale
+inline byte getEffectiveActiveMainNotes() {
+  return Global.colorScalesEnabled
+    ? scaleGetEffectiveScale()
+    : Global.mainNotes[Global.activeNotes];
+}
+
+// Bitmask of root-note of the current scale
+inline byte getEffectiveActiveAccentNotes() {
+  return Global.colorScalesEnabled
+    ? (1 << scaleGetEffectiveColorOffset())
+    : Global.mainNotes[Global.activeNotes];
+}
