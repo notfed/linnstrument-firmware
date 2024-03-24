@@ -13,6 +13,17 @@ enum Layer {
   layerScale  = 0b100000,
 };
 
+enum Option {
+  OPTION_NONE   = 0b000000,
+  OPTION_PITCH  = 0b000010,
+  OPTION_COLOR  = 0b000100,
+  OPTION_SCALE  = 0b001000,
+};
+
+
+static int curVisibleOptions = OPTION_PITCH | OPTION_COLOR | OPTION_SCALE;
+static Option cutEditOption = OPTION_NONE;
+
 static short curNumCellsTouched = 0;
 
 static byte previewNote = 0;
@@ -136,6 +147,16 @@ void handleTranspose2NewTouch() {
   //   updateDisplay();
   //   return;
   // }
+  // Toggled an option?
+  if (sensorCol == 0 && sensorRow >= 0 && sensorRow <= 2) {
+    switch(sensorRow) {
+      case 0: curVisibleOptions ^= OPTION_PITCH; break;
+      case 1: curVisibleOptions ^= OPTION_SCALE; break;
+      case 2: curVisibleOptions ^= OPTION_COLOR; break;
+    }
+    updateDisplay();
+    return;
+  }
 
   // Touched inside popup? If row0, set the pitch offset. If row1, set the mode offset. If row2, set the color offset.
   if (sensorCol >= 2 && sensorCol <= 13 && sensorRow >= 0 && sensorRow <= 2) {
@@ -295,18 +316,27 @@ static void drawPopup2() {
   
     // Bank
     // TODO
-    // Color
-    setLed(col, 2, curNoteColor, curNoteIsColorOffset ? cellSlowPulse : (curNoteIsInScale ? cellOn : cellOff));
-    // Mode
-    setLed(col, 1, curNoteColor, curNoteIsModeOffset ? cellSlowPulse : (curNoteIsInScale ? cellOn : cellOff));
     // Pitch
-    setLed(col, 0, COLOR_WHITE, curNoteIsPitchOffset ? cellOn : cellOff);
+    if (curVisibleOptions & OPTION_PITCH) {
+      setLed(col, 0, scaleGetEffectiveNoteColor(0), curNoteIsPitchOffset ? cellOn : cellOff);
+    }
+    // Mode
+    if (curVisibleOptions & OPTION_SCALE) {
+      setLed(col, 1, curNoteColor, curNoteIsModeOffset ? cellSlowPulse : (curNoteIsInScale ? cellOn : cellOff));
+    }
+    // Color
+    if (curVisibleOptions & OPTION_COLOR) {
+      setLed(col, 2, scaleGetNoteColor(curNote), curNoteIsColorOffset ? cellSlowPulse : cellOn);
+    }
   }
-  // Draw white borderrs  to the left and to the right of the popup
+  // Draw left-side white border
   for (int row = 0; row <= 2; row++) {
     setLed(1, row, COLOR_WHITE, cellOn);
-    setLed(14, row, COLOR_WHITE, cellOn);
-  } 
+  }
+  // Draw right-side white border
+  if (curVisibleOptions & OPTION_PITCH) setLed(14, 0, COLOR_WHITE, cellOn);
+  if (curVisibleOptions & OPTION_SCALE) setLed(14, 1, COLOR_WHITE, cellOn);
+  if (curVisibleOptions & OPTION_COLOR) setLed(14, 2, COLOR_WHITE, cellOn);
 }
 
 static void drawPopup() {

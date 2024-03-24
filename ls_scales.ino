@@ -119,6 +119,17 @@ byte scaleGetEffectiveNoteColor(byte paletteId, byte note) {
   return Global.paletteColors[paletteId][(note + colorOffset) % 12];
 }
 
+inline byte scaleGetNoteColor(byte note) {
+  return scaleGetNoteColor(Global.activePalette, note);
+}
+
+byte scaleGetNoteColor(byte paletteId, byte note) {
+  if (note > 11) {
+    return COLOR_OFF;
+  }
+  return Global.paletteColors[paletteId][(note) % 12];
+}
+
 void scaleRedraw() {
   switch (lightSettings) {
     case LIGHTS_MAIN:
