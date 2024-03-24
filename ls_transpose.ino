@@ -148,7 +148,7 @@ void handleTranspose2NewTouch() {
   //   return;
   // }
   // Toggled an option?
-  if (sensorCol == 0 && sensorRow >= 0 && sensorRow <= 2) {
+  if (sensorCol == 1 && sensorRow >= 0 && sensorRow <= 2) {
     switch(sensorRow) {
       case 0: curVisibleOptions ^= OPTION_PITCH; break;
       case 1: curVisibleOptions ^= OPTION_SCALE; break;
