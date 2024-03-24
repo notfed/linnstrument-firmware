@@ -22,7 +22,7 @@ enum Option {
 
 
 static int curVisibleOptions = OPTION_PITCH | OPTION_COLOR | OPTION_SCALE;
-static Option cutEditOption = OPTION_NONE;
+static int cutEditOption = OPTION_NONE;
 
 static short curNumCellsTouched = 0;
 
@@ -32,6 +32,9 @@ static boolean isDragging = false;
 static Layer dragLayer = layerMove;
 static unsigned long dragUpdateTime = 0;
 static unsigned long lastReleaseAllTime = 0;
+static uint32_t lastTouchTime = 0;
+static unsigned long lastTouchCol = 0;
+static unsigned long lastTouchRow = 0;
 static short dragFromCol = 0;
 static short dragFromRow = 0;
 static short uncommittedMoveOffset = 0;
@@ -132,6 +135,9 @@ static inline short dragOffset() {
 
 void handleTranspose2NewTouch() {
   maybeTimeoutDrag();
+  lastTouchTime = micros();
+  lastTouchCol = sensorCol;
+  lastTouchRow = sensorRow;
 
   // LAYER CHANGE: // Touched left of popup? Just change the popup layer and redraw.
   // if (sensorCol == 1 && sensorRow <= 4) {
@@ -147,14 +153,22 @@ void handleTranspose2NewTouch() {
   //   updateDisplay();
   //   return;
   // }
+
+
+
   // Toggled an option?
+  // if (sensorCol == 1 && sensorRow >= 0 && sensorRow <= 2) {
+  //   switch(sensorRow) {
+  //     case 0: curVisibleOptions ^= OPTION_PITCH; break;
+  //     case 1: curVisibleOptions ^= OPTION_SCALE; break;
+  //     case 2: curVisibleOptions ^= OPTION_COLOR; break;
+  //   }
+  //   updateDisplay();
+  //   return;
+  // }
+
+  // Toggling an option? Handle on release.
   if (sensorCol == 1 && sensorRow >= 0 && sensorRow <= 2) {
-    switch(sensorRow) {
-      case 0: curVisibleOptions ^= OPTION_PITCH; break;
-      case 1: curVisibleOptions ^= OPTION_SCALE; break;
-      case 2: curVisibleOptions ^= OPTION_COLOR; break;
-    }
-    updateDisplay();
     return;
   }
 
@@ -169,7 +183,7 @@ void handleTranspose2NewTouch() {
     return;
   }
 
-  // Touched left or right of popup? Ignore it.
+  // Touched border of popup? Ignore it.
   if (sensorCol <= 14 && sensorRow <= 2) {
     return;
   }
@@ -211,7 +225,29 @@ void handleTranspose2NewTouch() {
   updateDisplay();
 }
 
+const uint32_t HOLD_TIME_US = 1000000;
+
 void handleTranspose2Release() {
+  if (lastTouchCol == sensorCol && lastTouchRow == sensorRow && sensorCol == 1 && sensorRow >= 0 && sensorRow <= 2) {
+    // Long-held a popup option left-border? Enable it and put it in edit mode.
+    if (calcTimeDelta(micros(), lastTouchTime) >= HOLD_TIME_US) {
+      switch(sensorRow) {
+        case 0: curVisibleOptions |= OPTION_PITCH; cutEditOption = OPTION_PITCH; break;
+        case 1: curVisibleOptions |= OPTION_SCALE; cutEditOption = OPTION_SCALE; break;
+        case 2: curVisibleOptions |= OPTION_COLOR; cutEditOption = OPTION_COLOR; break;
+      }
+    // Tapped a popup option left-border? Toggle it and take it out of edit mode.
+    } else {
+      switch(sensorRow) {
+        case 0: curVisibleOptions ^= OPTION_PITCH; cutEditOption &= ~OPTION_PITCH; break;
+        case 1: curVisibleOptions ^= OPTION_SCALE; cutEditOption &= ~OPTION_SCALE; break;
+        case 2: curVisibleOptions ^= OPTION_COLOR; cutEditOption &= ~OPTION_COLOR; break;
+      }
+    }
+    updateDisplay();
+    return;
+  }
+
   // Released touch from popup? Ignore it.
   if (!isDragging) {
     return;
