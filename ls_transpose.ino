@@ -293,9 +293,14 @@ static void drawPopup2() {
     boolean curNoteIsModeOffset = mod(scaleGetEffectiveMode(), 12) == curNote;
     byte curNoteIsColorOffset = mod(getCommittedColorOffset(), 12) == curNote;
   
-    setLed(col, 0, curNoteColor, curNoteIsPitchOffset ? cellSlowPulse : (curNoteIsInScale ? cellOn : cellOff));
-    setLed(col, 1, curNoteColor, curNoteIsModeOffset ? cellSlowPulse : (curNoteIsInScale ? cellOn : cellOff));
+    // Bank
+    // TODO
+    // Color
     setLed(col, 2, curNoteColor, curNoteIsColorOffset ? cellSlowPulse : (curNoteIsInScale ? cellOn : cellOff));
+    // Mode
+    setLed(col, 1, curNoteColor, curNoteIsModeOffset ? cellSlowPulse : (curNoteIsInScale ? cellOn : cellOff));
+    // Pitch
+    setLed(col, 0, COLOR_WHITE, curNoteIsPitchOffset ? cellOn : cellOff);
   }
   // Draw white borderrs  to the left and to the right of the popup
   for (int row = 0; row <= 2; row++) {
