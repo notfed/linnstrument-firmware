@@ -160,13 +160,11 @@ void handleTranspose2NewTouch() {
 
   // Touched inside popup? If row0, set the pitch offset. If row1, set the mode offset. If row2, set the color offset.
   if (sensorCol >= 2 && sensorCol <= 13 && sensorRow >= 0 && sensorRow <= 2) {
-     if (sensorRow == 0) {
-       commitPitchOffset(sensorCol - 2);
-     } else if (sensorRow == 1) {
-       commitMode(sensorCol - 2);
-     } else if (sensorRow == 2) {
-       commitColorOffset(sensorCol - 2);
-     }
+    switch(sensorRow) {
+      case 0: if (curVisibleOptions & OPTION_PITCH) commitPitchOffset(sensorCol - 2); break;
+      case 1: if (curVisibleOptions & OPTION_SCALE) commitMode(sensorCol - 2); break;
+      case 2: if (curVisibleOptions & OPTION_COLOR) commitColorOffset(sensorCol - 2); break;
+    } 
     updateDisplay();
     return;
   }
@@ -332,11 +330,11 @@ static void drawPopup2() {
   // Draw left-side white border
   for (int row = 0; row <= 2; row++) {
     setLed(1, row, COLOR_WHITE, cellOn);
+    // Draw right-side white border
+    setLed(curVisibleOptions & OPTION_PITCH ? 14 : 2, 0, COLOR_WHITE, cellOn);
+    setLed(curVisibleOptions & OPTION_SCALE ? 14 : 2, 1, COLOR_WHITE, cellOn);
+    setLed(curVisibleOptions & OPTION_COLOR ? 14 : 2, 2, COLOR_WHITE, cellOn);
   }
-  // Draw right-side white border
-  if (curVisibleOptions & OPTION_PITCH) setLed(14, 0, COLOR_WHITE, cellOn);
-  if (curVisibleOptions & OPTION_SCALE) setLed(14, 1, COLOR_WHITE, cellOn);
-  if (curVisibleOptions & OPTION_COLOR) setLed(14, 2, COLOR_WHITE, cellOn);
 }
 
 static void drawPopup() {
