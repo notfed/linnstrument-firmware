@@ -133,6 +133,16 @@ static inline short dragOffset() {
   return dragDeltaCol + 5 * dragDeltaRow;
 }
 
+static boolean isInsidePopup(byte row, byte col) {
+   return
+      (sensorRow >= 0 && sensorRow <= 2 && sensorCol >= 1 && sensorCol <= 14) &&
+      (sensorCol <= 2 || 
+        (sensorRow == 0 && (OPTION_PITCH & curVisibleOptions)) ||
+        (sensorRow == 1 && (OPTION_SCALE & curVisibleOptions)) || 
+        (sensorRow == 2 && (OPTION_COLOR & curVisibleOptions))
+      );
+}
+
 void handleTranspose2NewTouch() {
   maybeTimeoutDrag();
   lastTouchTime = micros();
@@ -166,6 +176,20 @@ void handleTranspose2NewTouch() {
   //   updateDisplay();
   //   return;
   // }
+
+
+  boolean touchWasInsidePopup = isInsidePopup(sensorRow, sensorCol);
+  
+  // Touched inside popup but outside of current edit mode? Exit edit mode.
+  if (touchWasInsidePopup && curEditOption != OPTION_NONE &&
+    (sensorRow == 0 && !(curEditOption == OPTION_PITCH) ||
+     sensorRow == 1 && !(curEditOption == OPTION_SCALE) ||
+     sensorRow == 2 && !(curEditOption == OPTION_COLOR))
+  ) {
+    curEditOption = OPTION_NONE;
+    updateDisplay();
+    return;
+  }
 
   // Toggling an option? Handle on release.
   if (sensorCol == 1 && sensorRow >= 0 && sensorRow <= 2) {
