@@ -539,13 +539,16 @@ enum TransposeOption {
   OPTION_PITCH  = 0b000010,
   OPTION_SCALE  = 0b000100,
   OPTION_COLOR  = 0b001000,
+  OPTION_BANK   = 0b010000,
 };
 
-const uint32_t TR_HOLD_TIME_US = 1000000;
-const unsigned long TR_DRAG_TIMEOUT_US = 50000;
 const byte TR_ROW_PITCH = 0;
 const byte TR_ROW_SCALE = 1;
 const byte TR_ROW_COLOR = 2;
+const byte TR_ROW_BANK  = 3;
+
+const uint32_t TR_HOLD_TIME_US = 1000000;
+const unsigned long TR_DRAG_TIMEOUT_US = 50000;
 
 /***************************************** PANEL SETTINGS ****************************************/
 

@@ -5,6 +5,10 @@
 
 // TODO: Refactor to these methods:
 //
+//
+// onPressDown, onPressUp, onShortPress, onLongPress, onDragStart, onDragUpdate, onDragEnd
+//
+// onNewTouchTransposeMenu(byte row, byte col)
 // onTapTransposeMenu(byte row, byte col)
 // onHoldTransposeMenu(byte row, byte col)
 // onDragTransposeMenu(byte row, byte col)
@@ -136,11 +140,12 @@ static inline short dragOffset() {
 
 static boolean isInsideTransposeMenu(byte row, byte col) {
   return
-    (sensorRow >= 0 && sensorRow <= 2 && sensorCol >= 1 && sensorCol <= 14) &&
+    (sensorRow >= TR_ROW_PITCH && sensorRow <= TR_ROW_BANK && sensorCol <= 14) &&
     (sensorCol <= 2 || 
       (sensorRow == TR_ROW_PITCH && (OPTION_PITCH & curVisibleOptions)) ||
       (sensorRow == TR_ROW_SCALE && (OPTION_SCALE & curVisibleOptions)) || 
-      (sensorRow == TR_ROW_COLOR && (OPTION_COLOR & curVisibleOptions))
+      (sensorRow == TR_ROW_COLOR && (OPTION_COLOR & curVisibleOptions)) ||
+      (sensorRow == TR_ROW_BANK  && (OPTION_BANK  & curVisibleOptions))
     );
 }
 
@@ -173,6 +178,21 @@ static void onTapOptionCell(TransposeOption option, byte index) {
         commitColorOffset(index);
       }
       break;
+    case OPTION_BANK:
+      byte colorPaletteId = index;
+      byte scaleId = index;
+      if (curEditOption == OPTION_BANK) {
+        // Copy the current active color palette into the chosen palette.
+        for (byte i = 0; i < 12; i++) {
+          Global.paletteColors[colorPaletteId][i] = Global.paletteColors[Global.activePalette][i];
+        }
+        // Copy the current active scale into the chosen scale.
+        Global.mainNotes[scaleId] = Global.mainNotes[Global.activeNotes];
+      } else {
+        Global.activeNotes = scaleId;
+        Global.activePalette = colorPaletteId;
+      }
+      break;
     }
 }
 
@@ -182,28 +202,23 @@ void handleTranspose2NewTouch() {
   lastTouchCol = sensorCol;
   lastTouchRow = sensorRow;
 
-  boolean touchWasInsideTransposeMenu = isInsideTransposeMenu(sensorRow, sensorCol);
-
-  // Touching an expander? Handle on release.
-  if (touchWasInsideTransposeMenu && sensorCol == 1) {
-    return;
-  }
-  
-  // Touching an option cell?
-  if (touchWasInsideTransposeMenu && sensorCol >= 2 && sensorCol <= 13) {
-    byte index = sensorCol - 2;
-    switch(sensorRow) {
-      case TR_ROW_PITCH: onTapOptionCell(OPTION_PITCH, index); break;
-      case TR_ROW_SCALE: onTapOptionCell(OPTION_SCALE, index); break;
-      case TR_ROW_COLOR: onTapOptionCell(OPTION_COLOR, index); break;
-    }
-    updateDisplay();
-    return;
-  }
-
-  // Touched other area of transpose menu? Ignore it.
-  if (sensorCol <= 14 && sensorRow <= 2) {
-    return;
+  if (isInsideTransposeMenu(sensorRow, sensorCol)) {
+      // Touching a menu option cell?
+      if (sensorCol >= 2 && sensorCol <= 13) {
+        byte index = sensorCol - 2;
+        switch(sensorRow) {
+          case TR_ROW_PITCH: onTapOptionCell(OPTION_PITCH, index); break;
+          case TR_ROW_SCALE: onTapOptionCell(OPTION_SCALE, index); break;
+          case TR_ROW_COLOR: onTapOptionCell(OPTION_COLOR, index); break;
+          case TR_ROW_BANK:  onTapOptionCell(OPTION_BANK,  index); break;
+        }
+        updateDisplay();
+        return;
+      }
+      // Touching the left or right white border? Handle on release.
+      else {
+        return;
+      }
   }
 
   // Touched main area. Count the touch.
@@ -266,6 +281,7 @@ static void onTapOptionExpander(TransposeOption option) {
         curEditOption &= ~OPTION_COLOR;
       }
       break;
+    case TR_ROW_BANK: curVisibleOptions ^= OPTION_BANK; curEditOption &= ~OPTION_BANK; break;
   }
 }
 
@@ -283,6 +299,7 @@ static void onReleaseOptionExpander(TransposeOption option) {
         curEditOption = OPTION_COLOR;
       }
       break;
+    case TR_ROW_BANK: curVisibleOptions |= OPTION_BANK; curEditOption = OPTION_BANK; break;
   }
 }
 
@@ -294,7 +311,8 @@ void handleTranspose2Release() {
   if (touchWasInsideTransposeMenu && curEditOption != OPTION_NONE &&
     (sensorRow == TR_ROW_PITCH && !(curEditOption == OPTION_PITCH) ||
      sensorRow == TR_ROW_SCALE && !(curEditOption == OPTION_SCALE) ||
-     sensorRow == TR_ROW_COLOR && !(curEditOption == OPTION_COLOR))
+     sensorRow == TR_ROW_COLOR && !(curEditOption == OPTION_COLOR) ||
+     sensorRow == TR_ROW_BANK  && !(curEditOption == OPTION_BANK))
   ) {
     curEditOption = OPTION_NONE;
     updateDisplay();
@@ -308,6 +326,7 @@ void handleTranspose2Release() {
       case TR_ROW_PITCH: wasLongHold ? onReleaseOptionExpander(OPTION_PITCH) : onTapOptionExpander(OPTION_PITCH); break;
       case TR_ROW_SCALE: wasLongHold ? onReleaseOptionExpander(OPTION_SCALE) : onTapOptionExpander(OPTION_SCALE); break;
       case TR_ROW_COLOR: wasLongHold ? onReleaseOptionExpander(OPTION_COLOR) : onTapOptionExpander(OPTION_COLOR); break;
+      case TR_ROW_BANK:  wasLongHold ? onReleaseOptionExpander(OPTION_BANK ) : onTapOptionExpander(OPTION_BANK ); break;
     }
     updateDisplay();
     return;
@@ -406,20 +425,24 @@ static void drawTransposeMenu() {
     byte curNoteIsPitchOffset =  mod(getCommittedPitchOffset(), 12) == curNote;
     boolean curNoteIsModeOffset = mod(scaleGetEffectiveMode(), 12) == curNote;
     byte curNoteIsColorOffset = mod(getCommittedColorOffset(), 12) == curNote;
+    byte curNoteIsBank = mod(Global.activeNotes, 12) == curNote;
   
-    // Bank
-    // TODO
     // Pitch
     if (curVisibleOptions & OPTION_PITCH) {
       setLed(col, TR_ROW_PITCH, scaleGetEffectiveNoteColor(0), curNoteIsPitchOffset ? cellOn : cellOff);
     }
-    // Mode
+    // Scale
     if (curVisibleOptions & OPTION_SCALE) {
-      setLed(col, TR_ROW_SCALE, curNoteColor, curNoteIsModeOffset ? cellSlowPulse : (curNoteIsInScale ? cellOn : cellOff));
+      // TODO: COLOR_WHITE or curNoteColor?
+      setLed(col, TR_ROW_SCALE, COLOR_WHITE, curNoteIsModeOffset ? cellSlowPulse : (curNoteIsInScale ? cellOn : cellOff));
     }
     // Color
     if (curVisibleOptions & OPTION_COLOR) {
       setLed(col, TR_ROW_COLOR, scaleGetNoteColor(curNote), curNoteIsColorOffset ? cellSlowPulse : cellOn);
+    }
+    // Bank
+    if (curVisibleOptions & OPTION_BANK) {
+      setLed(col, TR_ROW_BANK, curNoteIsBank ? COLOR_WHITE : COLOR_OFF, curNoteIsBank ? cellSlowPulse : cellOff);
     }
   }
   // Draw left-side white border
@@ -430,10 +453,12 @@ static void drawTransposeMenu() {
   } else {
     setLed(1, TR_ROW_COLOR, COLOR_WHITE, cellOn);
   }
+  setLed(1, TR_ROW_BANK , COLOR_WHITE, curEditOption & OPTION_BANK  ? cellSlowPulse : cellOn);
   // Draw right-side white border
   setLed(curVisibleOptions & OPTION_PITCH ? 14 : 2, TR_ROW_PITCH, COLOR_WHITE, curEditOption & OPTION_PITCH ? cellSlowPulse : cellOn);
   setLed(curVisibleOptions & OPTION_SCALE ? 14 : 2, TR_ROW_SCALE, COLOR_WHITE, curEditOption & OPTION_SCALE ? cellSlowPulse : cellOn);
   setLed(curVisibleOptions & OPTION_COLOR ? 14 : 2, TR_ROW_COLOR, COLOR_WHITE, curEditOption & OPTION_COLOR ? cellSlowPulse : cellOn);
+  setLed(curVisibleOptions & OPTION_BANK  ? 14 : 2, TR_ROW_BANK,  COLOR_WHITE, curEditOption & OPTION_BANK  ? cellSlowPulse : cellOn);
 }
 
 static void drawPopupOld() {
