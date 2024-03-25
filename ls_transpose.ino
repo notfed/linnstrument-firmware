@@ -243,6 +243,16 @@ void handleTranspose2NewTouch() {
   updateDisplay();
 }
 
+// Transform the color palette into a circle of fifths by rotating every other color by a fifth
+static void permuteColorFifths() {
+  for (byte note = 1; note <= 5; note+=2) {
+    byte curColor = Global.paletteColors[Global.activePalette][note];
+    byte fifthColor = Global.paletteColors[Global.activePalette][(note+6)%12];
+    Global.paletteColors[Global.activePalette][(note+6)%12] = curColor;
+    Global.paletteColors[Global.activePalette][note] = fifthColor;
+  }
+}
+
 // Tapped an option expander (white, left-side cell)? Toggle it and take it out of edit mode.
 static void onTapOptionExpander(TransposeOption option) {
   switch(sensorRow) {
@@ -266,8 +276,9 @@ static void onReleaseOptionExpander(TransposeOption option) {
     case TR_ROW_SCALE: curVisibleOptions |= OPTION_SCALE; curEditOption = OPTION_SCALE; break;
     case TR_ROW_COLOR:
       if (curEditOption == OPTION_COLOR) {
-        // TODO: Transmute colors
+        permuteColorFifths();
       } else { 
+        brushColor = scaleGetEffectiveNoteColor(0);
         curVisibleOptions |= OPTION_COLOR;
         curEditOption = OPTION_COLOR;
       }
@@ -414,7 +425,11 @@ static void drawTransposeMenu() {
   // Draw left-side white border
   setLed(1, TR_ROW_PITCH, COLOR_WHITE, curEditOption & OPTION_PITCH ? cellSlowPulse : cellOn);
   setLed(1, TR_ROW_SCALE, COLOR_WHITE, curEditOption & OPTION_SCALE ? cellSlowPulse : cellOn);
-  setLed(1, TR_ROW_COLOR, COLOR_WHITE, curEditOption & OPTION_COLOR ? cellSlowPulse : cellOn);
+  if (curEditOption & OPTION_COLOR) {
+    setLed(1, TR_ROW_COLOR, brushColor, cellSlowPulse);
+  } else {
+    setLed(1, TR_ROW_COLOR, COLOR_WHITE, cellOn);
+  }
   // Draw right-side white border
   setLed(curVisibleOptions & OPTION_PITCH ? 14 : 2, TR_ROW_PITCH, COLOR_WHITE, curEditOption & OPTION_PITCH ? cellSlowPulse : cellOn);
   setLed(curVisibleOptions & OPTION_SCALE ? 14 : 2, TR_ROW_SCALE, COLOR_WHITE, curEditOption & OPTION_SCALE ? cellSlowPulse : cellOn);
