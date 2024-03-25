@@ -2,6 +2,26 @@
 // TODO:
 // -  Handle split-screen
 // -------------------------------
+
+// TODO: Refactor to these methods:
+//
+// onTapTransposeMenu(byte row, byte col)
+// onHoldTransposeMenu(byte row, byte col)
+// onDragTransposeMenu(byte row, byte col)
+// onReleaseTransposeMenu(byte row, byte col)
+//
+// onTapOptionExpander(TransposeOption option)
+// onHoldOptionExpander(TransposeOption option)
+// onReleaseOptionExpander(TransposeOption option)
+//
+// setOptionExpanded(TransposeOption option)
+// getOptionExpanded(TransposeOption option)
+//
+// onTapOptionCell(TransposeOption option, byte index)
+// onHoldOptionCell(TransposeOption option, byte index)
+// onDragOptionCell(TransposeOption option, byte index)
+// onReleaseOptionCell(TransposeOption option, byte index)
+
 boolean isTranspose2Enabled() { return Global.colorScalesEnabled; }
 
 enum Layer {
@@ -13,16 +33,9 @@ enum Layer {
   layerScale  = 0b100000,
 };
 
-enum Option {
-  OPTION_NONE   = 0b000000,
-  OPTION_PITCH  = 0b000010,
-  OPTION_COLOR  = 0b000100,
-  OPTION_SCALE  = 0b001000,
-};
-
-
-static int curVisibleOptions = OPTION_PITCH | OPTION_COLOR | OPTION_SCALE;
+static int curVisibleOptions = OPTION_PITCH | OPTION_SCALE | OPTION_COLOR;
 static int curEditOption = OPTION_NONE;
+static byte brushColor = COLOR_RED;
 
 static short curNumCellsTouched = 0;
 
@@ -60,18 +73,6 @@ static byte midiChannel = 0;
 void transpose2Reset() {
   isDragging = false;
 }
-
-#ifndef COLOR_AND_DISPLAY_OVERRIDE_STRUCT
-#define COLOR_AND_DISPLAY_OVERRIDE_STRUCT
-
-struct ColorAndDisplayOverride {
-  boolean overrideColor;
-  byte color;
-  boolean overrideDisplay;
-  CellDisplay display;
-};
-
-#endif COLOR_AND_DISPLAY_OVERRIDE_STRUCT
 
 // When dragging the mode layer, this is called to paint a cell
 // From the dragged row, just color one octave, starting at the mode offset. Hide other notes.
@@ -119,8 +120,8 @@ void paintTranspose2Display() {
   blinkAllRootNotes = false;
   displayNoteFilter = NULL;
 
-  // Draw popup
-  drawPopup2();
+  // Draw transpose menu
+  drawTransposeMenu();
 
   // Pop commit state
   commitPitchOffset(prevCommittedPitchOffset);
@@ -133,14 +134,46 @@ static inline short dragOffset() {
   return dragDeltaCol + 5 * dragDeltaRow;
 }
 
-static boolean isInsidePopup(byte row, byte col) {
-   return
-      (sensorRow >= 0 && sensorRow <= 2 && sensorCol >= 1 && sensorCol <= 14) &&
-      (sensorCol <= 2 || 
-        (sensorRow == 0 && (OPTION_PITCH & curVisibleOptions)) ||
-        (sensorRow == 1 && (OPTION_SCALE & curVisibleOptions)) || 
-        (sensorRow == 2 && (OPTION_COLOR & curVisibleOptions))
-      );
+static boolean isInsideTransposeMenu(byte row, byte col) {
+  return
+    (sensorRow >= 0 && sensorRow <= 2 && sensorCol >= 1 && sensorCol <= 14) &&
+    (sensorCol <= 2 || 
+      (sensorRow == TR_ROW_PITCH && (OPTION_PITCH & curVisibleOptions)) ||
+      (sensorRow == TR_ROW_SCALE && (OPTION_SCALE & curVisibleOptions)) || 
+      (sensorRow == TR_ROW_COLOR && (OPTION_COLOR & curVisibleOptions))
+    );
+}
+
+// Touching a cell within the transpose menu?
+// - In normal mode: modify the layer.
+// - In edit mode: set the layer's offset.
+static void onTapOptionCell(TransposeOption option, byte index) {
+  switch(option) {
+    case OPTION_PITCH:
+      if (curEditOption == OPTION_PITCH) {
+      } else {
+        commitPitchOffset(index);
+      }
+      break;
+    case OPTION_SCALE:
+      if (curEditOption == OPTION_SCALE) {
+        Global.mainNotes[Global.activeNotes] ^= (1 << index);
+      } else {
+        commitMode(index);
+      }
+      break;
+    case OPTION_COLOR:
+      if (curEditOption == OPTION_COLOR) {
+        if (Global.paletteColors[Global.activePalette][index] == brushColor) {
+          Global.paletteColors[Global.activePalette][index] = COLOR_OFF;
+        } else {
+          Global.paletteColors[Global.activePalette][index] = brushColor;
+        }
+      } else {
+        commitColorOffset(index);
+      }
+      break;
+    }
 }
 
 void handleTranspose2NewTouch() {
@@ -149,65 +182,26 @@ void handleTranspose2NewTouch() {
   lastTouchCol = sensorCol;
   lastTouchRow = sensorRow;
 
-  // LAYER CHANGE: // Touched left of popup? Just change the popup layer and redraw.
-  // if (sensorCol == 1 && sensorRow <= 4) {
-  //    if (sensorRow == 0) {
-  //     dragLayer = layerPitch;
-  //   } else if (sensorRow == 1) {
-  //     dragLayer = layerMode;
-  //   } else if (sensorRow == 2) {
-  //     dragLayer = layerColor;
-  //   } else {
-  //     dragLayer = layerMove;
-  //   }
-  //   updateDisplay();
-  //   return;
-  // }
+  boolean touchWasInsideTransposeMenu = isInsideTransposeMenu(sensorRow, sensorCol);
 
-
-
-  // Toggled an option?
-  // if (sensorCol == 1 && sensorRow >= 0 && sensorRow <= 2) {
-  //   switch(sensorRow) {
-  //     case 0: curVisibleOptions ^= OPTION_PITCH; break;
-  //     case 1: curVisibleOptions ^= OPTION_SCALE; break;
-  //     case 2: curVisibleOptions ^= OPTION_COLOR; break;
-  //   }
-  //   updateDisplay();
-  //   return;
-  // }
-
-
-  boolean touchWasInsidePopup = isInsidePopup(sensorRow, sensorCol);
+  // Touching an expander? Handle on release.
+  if (touchWasInsideTransposeMenu && sensorCol == 1) {
+    return;
+  }
   
-  // Touched inside popup but outside of current edit mode? Exit edit mode.
-  if (touchWasInsidePopup && curEditOption != OPTION_NONE &&
-    (sensorRow == 0 && !(curEditOption == OPTION_PITCH) ||
-     sensorRow == 1 && !(curEditOption == OPTION_SCALE) ||
-     sensorRow == 2 && !(curEditOption == OPTION_COLOR))
-  ) {
-    curEditOption = OPTION_NONE;
-    updateDisplay();
-    return;
-  }
-
-  // Toggling an option? Handle on release.
-  if (sensorCol == 1 && sensorRow >= 0 && sensorRow <= 2) {
-    return;
-  }
-
-  // Touched inside popup? If row0, set the pitch offset. If row1, set the mode offset. If row2, set the color offset.
-  if (sensorCol >= 2 && sensorCol <= 13 && sensorRow >= 0 && sensorRow <= 2) {
+  // Touching an option cell?
+  if (touchWasInsideTransposeMenu && sensorCol >= 2 && sensorCol <= 13) {
+    byte index = sensorCol - 2;
     switch(sensorRow) {
-      case 0: if (curVisibleOptions & OPTION_PITCH) commitPitchOffset(sensorCol - 2); break;
-      case 1: if (curVisibleOptions & OPTION_SCALE) commitMode(sensorCol - 2); break;
-      case 2: if (curVisibleOptions & OPTION_COLOR) commitColorOffset(sensorCol - 2); break;
-    } 
+      case TR_ROW_PITCH: onTapOptionCell(OPTION_PITCH, index); break;
+      case TR_ROW_SCALE: onTapOptionCell(OPTION_SCALE, index); break;
+      case TR_ROW_COLOR: onTapOptionCell(OPTION_COLOR, index); break;
+    }
     updateDisplay();
     return;
   }
 
-  // Touched border of popup? Ignore it.
+  // Touched other area of transpose menu? Ignore it.
   if (sensorCol <= 14 && sensorRow <= 2) {
     return;
   }
@@ -249,48 +243,78 @@ void handleTranspose2NewTouch() {
   updateDisplay();
 }
 
-const uint32_t HOLD_TIME_US = 1000000;
+// Tapped an option expander (white, left-side cell)? Toggle it and take it out of edit mode.
+static void onTapOptionExpander(TransposeOption option) {
+  switch(sensorRow) {
+    case TR_ROW_PITCH: curVisibleOptions ^= OPTION_PITCH; curEditOption &= ~OPTION_PITCH; break;
+    case TR_ROW_SCALE: curVisibleOptions ^= OPTION_SCALE; curEditOption &= ~OPTION_SCALE; break;
+    case TR_ROW_COLOR:
+      if (curEditOption == OPTION_COLOR) {
+        brushColor = colorCycle(brushColor, false);
+      } else {
+        curVisibleOptions ^= OPTION_COLOR;
+        curEditOption &= ~OPTION_COLOR;
+      }
+      break;
+  }
+}
+
+// Long held, then released, an option expander (white, left-side cell)? Enable it and put it in edit mode.
+static void onReleaseOptionExpander(TransposeOption option) {
+  switch(sensorRow) {
+    case TR_ROW_PITCH: curVisibleOptions |= OPTION_PITCH; curEditOption = OPTION_PITCH; break;
+    case TR_ROW_SCALE: curVisibleOptions |= OPTION_SCALE; curEditOption = OPTION_SCALE; break;
+    case TR_ROW_COLOR:
+      if (curEditOption == OPTION_COLOR) {
+        // TODO: Transmute colors
+      } else { 
+        curVisibleOptions |= OPTION_COLOR;
+        curEditOption = OPTION_COLOR;
+      }
+      break;
+  }
+}
 
 void handleTranspose2Release() {
-  if (lastTouchCol == sensorCol && lastTouchRow == sensorRow && sensorCol == 1 && sensorRow >= 0 && sensorRow <= 2) {
-    // Long-held a popup option left-border? Enable it and put it in edit mode.
-    if (calcTimeDelta(micros(), lastTouchTime) >= HOLD_TIME_US) {
-      switch(sensorRow) {
-        case 0: curVisibleOptions |= OPTION_PITCH; curEditOption = OPTION_PITCH; break;
-        case 1: curVisibleOptions |= OPTION_SCALE; curEditOption = OPTION_SCALE; break;
-        case 2: curVisibleOptions |= OPTION_COLOR; curEditOption = OPTION_COLOR; break;
-      }
-    // Tapped a popup option left-border? Toggle it and take it out of edit mode.
-    } else {
-      switch(sensorRow) {
-        case 0: curVisibleOptions ^= OPTION_PITCH; curEditOption &= ~OPTION_PITCH; break;
-        case 1: curVisibleOptions ^= OPTION_SCALE; curEditOption &= ~OPTION_SCALE; break;
-        case 2: curVisibleOptions ^= OPTION_COLOR; curEditOption &= ~OPTION_COLOR; break;
-      }
+  boolean touchWasInsideTransposeMenu = isInsideTransposeMenu(lastTouchRow, lastTouchCol);
+  boolean touchedAndReleasedSameCell = lastTouchCol == sensorCol && lastTouchRow == sensorRow;
+
+  // Exit edit mode
+  if (touchWasInsideTransposeMenu && curEditOption != OPTION_NONE &&
+    (sensorRow == TR_ROW_PITCH && !(curEditOption == OPTION_PITCH) ||
+     sensorRow == TR_ROW_SCALE && !(curEditOption == OPTION_SCALE) ||
+     sensorRow == TR_ROW_COLOR && !(curEditOption == OPTION_COLOR))
+  ) {
+    curEditOption = OPTION_NONE;
+    updateDisplay();
+    return;
+  }
+
+  // Tapped/held an expander
+  if (touchWasInsideTransposeMenu && touchedAndReleasedSameCell && sensorCol == 1) {
+    boolean wasLongHold = calcTimeDelta(micros(), lastTouchTime) >= TR_HOLD_TIME_US;
+    switch(sensorRow) {
+      case TR_ROW_PITCH: wasLongHold ? onReleaseOptionExpander(OPTION_PITCH) : onTapOptionExpander(OPTION_PITCH); break;
+      case TR_ROW_SCALE: wasLongHold ? onReleaseOptionExpander(OPTION_SCALE) : onTapOptionExpander(OPTION_SCALE); break;
+      case TR_ROW_COLOR: wasLongHold ? onReleaseOptionExpander(OPTION_COLOR) : onTapOptionExpander(OPTION_COLOR); break;
     }
     updateDisplay();
     return;
   }
 
-  // Released touch from popup? Ignore it.
-  if (!isDragging) {
-    return;
+  // Release drag
+  if (isDragging) {
+    curNumCellsTouched--;
+    if (curNumCellsTouched == 0) {
+      lastReleaseAllTime = micros();
+    }
+    // We'll respond to the drag release asynchronously in maybeTimeoutDrag 
   }
-
-  // Otherwise, count the release
-  curNumCellsTouched--;
-  if (curNumCellsTouched == 0) {
-    lastReleaseAllTime = micros();
-  }
-
-  // We'll respond to the release asynchronously in maybeTimeoutDrag 
 }
 
 static short mod(short a, short b) {
   return (a % b + b) % b;
 }
-
-const unsigned long DRAG_TIMEOUT_US = 50000;
 
 // This is called asynchronously, often. Return true if timeout occurred.
 boolean maybeTimeoutDrag() {
@@ -303,7 +327,7 @@ boolean maybeTimeoutDrag() {
 
   // Detect if timed out
   boolean timedOut = isDragging && curNumCellsTouched == 0 &&
-      calcTimeDelta(micros(), lastReleaseAllTime) >= DRAG_TIMEOUT_US;
+      calcTimeDelta(micros(), lastReleaseAllTime) >= TR_DRAG_TIMEOUT_US;
 
   // If timed out, we can now handle touch release
   if (timedOut) {
@@ -357,7 +381,7 @@ static void dragUpdate() {
   dragDeltaRow = sensorRow - dragFromRow;
 }
 
-static void drawPopup2() {
+static void drawTransposeMenu() {
   // Draw cells between rows 0..2, and columns 1..12
   // Row 0 will draw 12 cells, each with the color of the note, and pulsing if it's the pitch offset
   // Row 1 will draw 12 cells, each with the color of the note, and pulsing if it's the mode offset
@@ -376,28 +400,28 @@ static void drawPopup2() {
     // TODO
     // Pitch
     if (curVisibleOptions & OPTION_PITCH) {
-      setLed(col, 0, scaleGetEffectiveNoteColor(0), curNoteIsPitchOffset ? cellOn : cellOff);
+      setLed(col, TR_ROW_PITCH, scaleGetEffectiveNoteColor(0), curNoteIsPitchOffset ? cellOn : cellOff);
     }
     // Mode
     if (curVisibleOptions & OPTION_SCALE) {
-      setLed(col, 1, curNoteColor, curNoteIsModeOffset ? cellSlowPulse : (curNoteIsInScale ? cellOn : cellOff));
+      setLed(col, TR_ROW_SCALE, curNoteColor, curNoteIsModeOffset ? cellSlowPulse : (curNoteIsInScale ? cellOn : cellOff));
     }
     // Color
     if (curVisibleOptions & OPTION_COLOR) {
-      setLed(col, 2, scaleGetNoteColor(curNote), curNoteIsColorOffset ? cellSlowPulse : cellOn);
+      setLed(col, TR_ROW_COLOR, scaleGetNoteColor(curNote), curNoteIsColorOffset ? cellSlowPulse : cellOn);
     }
   }
   // Draw left-side white border
-  setLed(1, 0, COLOR_WHITE, curEditOption & OPTION_PITCH ? cellSlowPulse : cellOn);
-  setLed(1, 1, COLOR_WHITE, curEditOption & OPTION_SCALE ? cellSlowPulse : cellOn);
-  setLed(1, 2, COLOR_WHITE, curEditOption & OPTION_COLOR ? cellSlowPulse : cellOn);
+  setLed(1, TR_ROW_PITCH, COLOR_WHITE, curEditOption & OPTION_PITCH ? cellSlowPulse : cellOn);
+  setLed(1, TR_ROW_SCALE, COLOR_WHITE, curEditOption & OPTION_SCALE ? cellSlowPulse : cellOn);
+  setLed(1, TR_ROW_COLOR, COLOR_WHITE, curEditOption & OPTION_COLOR ? cellSlowPulse : cellOn);
   // Draw right-side white border
-  setLed(curVisibleOptions & OPTION_PITCH ? 14 : 2, 0, COLOR_WHITE, curEditOption & OPTION_PITCH ? cellSlowPulse : cellOn);
-  setLed(curVisibleOptions & OPTION_SCALE ? 14 : 2, 1, COLOR_WHITE, curEditOption & OPTION_SCALE ? cellSlowPulse : cellOn);
-  setLed(curVisibleOptions & OPTION_COLOR ? 14 : 2, 2, COLOR_WHITE, curEditOption & OPTION_COLOR ? cellSlowPulse : cellOn);
+  setLed(curVisibleOptions & OPTION_PITCH ? 14 : 2, TR_ROW_PITCH, COLOR_WHITE, curEditOption & OPTION_PITCH ? cellSlowPulse : cellOn);
+  setLed(curVisibleOptions & OPTION_SCALE ? 14 : 2, TR_ROW_SCALE, COLOR_WHITE, curEditOption & OPTION_SCALE ? cellSlowPulse : cellOn);
+  setLed(curVisibleOptions & OPTION_COLOR ? 14 : 2, TR_ROW_COLOR, COLOR_WHITE, curEditOption & OPTION_COLOR ? cellSlowPulse : cellOn);
 }
 
-static void drawPopup() {
+static void drawPopupOld() {
   // Draw right border
   for (int row = 0; row <= 4; row++) {
     int col = 5;

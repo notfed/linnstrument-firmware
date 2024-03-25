@@ -267,7 +267,6 @@ const unsigned long LED_ARRAY_SIZE = (MAX_LED_LAYERS+1) * LED_LAYER_SIZE;
 // obtain the focused cell for a channel in a asplit
 #define focus(split, channel)      focusCell[split][channel - 1]
 
-
 /****************************************** TOUCH TRACKING ***************************************/
 
 // Current cell in the scan routine
@@ -526,6 +525,27 @@ struct __attribute__ ((packed)) CalibrationY {
   int32_t fxdRatio;
 };
 
+/****************************************** TRANSPOSE SCREEN (with color scales enabled) ***************************************/
+
+struct ColorAndDisplayOverride {
+  boolean overrideColor;
+  byte color;
+  boolean overrideDisplay;
+  CellDisplay display;
+};
+
+enum TransposeOption {
+  OPTION_NONE   = 0b000000,
+  OPTION_PITCH  = 0b000010,
+  OPTION_SCALE  = 0b000100,
+  OPTION_COLOR  = 0b001000,
+};
+
+const uint32_t TR_HOLD_TIME_US = 1000000;
+const unsigned long TR_DRAG_TIMEOUT_US = 50000;
+const byte TR_ROW_PITCH = 0;
+const byte TR_ROW_SCALE = 1;
+const byte TR_ROW_COLOR = 2;
 
 /***************************************** PANEL SETTINGS ****************************************/
 

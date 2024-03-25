@@ -71,18 +71,6 @@ boolean blinkAllRootNotes = false;    // indicates whether all root notes should
 // TODO: I added this, but we don't use it. Remove it
 short blinkNote = -1;                 // if non-negative, blink the specified note
 
-#ifndef COLOR_AND_DISPLAY_OVERRIDE_STRUCT
-#define COLOR_AND_DISPLAY_OVERRIDE_STRUCT
-
-struct ColorAndDisplayOverride {
-  boolean overrideColor;
-  byte color;
-  boolean overrideDisplay;
-  CellDisplay display;
-};
-
-#endif COLOR_AND_DISPLAY_OVERRIDE_STRUCT
-
 // if non-null, this function will be invoked to determine whether the specified note should be displayed
 struct ColorAndDisplayOverride (*displayNoteFilter)(byte, byte, byte) = NULL;  
 
