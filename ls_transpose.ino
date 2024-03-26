@@ -434,7 +434,13 @@ static void drawTransposeMenu() {
     // Scale
     if (curVisibleOptions & OPTION_SCALE) {
       // TODO: COLOR_WHITE or curNoteColor?
-      setLed(col, TR_ROW_SCALE, scaleGetEffectiveNoteColor(mod(curNote-scaleGetEffectiveMode(),12)), curNoteIsModeOffset ? cellSlowPulse : (curNoteIsInScale ? cellOn : cellOff));
+      byte color = scaleGetEffectiveNoteColor(
+        mod(
+          ((short)curNote) - ((short)scaleGetEffectiveMode()),
+          12
+        )
+      );
+      setLed(col, TR_ROW_SCALE, color, curNoteIsModeOffset ? cellSlowPulse : (curNoteIsInScale ? cellOn : cellOff));
     }
     // Color
     if (curVisibleOptions & OPTION_COLOR) {
