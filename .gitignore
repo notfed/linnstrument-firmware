@@ -6,3 +6,4 @@ linnstrument-firmware.sublime-*
 stino.settings
 .theia/**
 .vscode/**
+.DS_Store
